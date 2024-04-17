@@ -1,4 +1,3 @@
-#include <stdlib.h>
 #include "Queue.h"
 
 Queue* constructQueue() 
@@ -10,7 +9,7 @@ Queue* constructQueue()
 }
 bool push(Queue* queue, ProcessData pData)
 {
-    Node* newNode = (Node*)malloc(sizeof(Node));
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
     newNode->pData = pData;
     newNode->next = NULL;
     if(queue->back == NULL) 
@@ -25,13 +24,13 @@ bool push(Queue* queue, ProcessData pData)
     }
     return 1;
 }
-Node* pop(Queue* queue) 
+struct Node* pop(Queue* queue) 
 {
     if(queue->front == NULL)
     {
         return NULL;
     }
-    Node* node = queue->front;
+    struct Node* node = queue->front;
     queue->front = queue->front->next;
     if(queue->front == NULL) 
         queue->back = NULL;
@@ -43,7 +42,7 @@ bool empty(Queue *queue)
         return 1;
     return  0;
 }
-Node* peek(Queue *queue)
+struct Node* peek(Queue *queue)
 {
     if(queue->front == NULL) 
         return NULL;

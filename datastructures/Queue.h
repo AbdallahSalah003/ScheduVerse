@@ -1,21 +1,23 @@
 #pragma once
+#include <stdbool.h>
+#include <stdlib.h>
 
 #include "../process-data/processData.h"
 
-struct 
+struct Node
 {
     ProcessData pData;
-    Node *next;
+    struct Node *next;
     
-} typedef Node;
+};
 struct
 {
-    Node *front;
-    Node *back;
+    struct Node *front;
+    struct Node *back;
 } typedef Queue;
 
 Queue* constructQueue();
 bool push(Queue* queue, ProcessData pData);
-Node* pop(Queue* queue);
+struct Node* pop(Queue* queue);
 bool empty(Queue* queue);
-Node* peek(Queue* queue);
+struct Node* peek(Queue* queue);

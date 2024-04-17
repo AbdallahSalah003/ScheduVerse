@@ -21,27 +21,27 @@ int main(int argc, char * argv[])
     // TODO Initialization
     queue = constructQueue(); 
     // 1. Read the input files.
-    readInputFile("process.txt");
+    readInputFile("processes.txt");
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
-    int *schedAlgo, *quantum;
+    int schedAlgo, quantum;
     printf("Choode Scheduling Algorithm:\n 1: HPF \n 2: SRTN \n 3: RR \n");
-    scanf("%d", schedAlgo);
-    if(*schedAlgo == 3) 
+    scanf("%d", &schedAlgo);
+    if(schedAlgo == 3) 
     {
         printf("Enter RR quantum: ");
-        scanf("%d", *quantum);
+        scanf("%d", &quantum);
     }
     // 3. Initiate and create the scheduler and clock processes.
     // 4. Use this function after creating the clock process to initialize clock
-    initClk();
+        // initClk();
     // To get time use this
-    int x = getClk();
-    printf("current time is %d\n", x);
+        // int x = getClk();
+        // printf("current time is %d\n", x);
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
-    destroyClk(true);
+        // destroyClk(true);
 }
 
 void clearResources(int signum)
