@@ -32,16 +32,38 @@ int main(int argc, char * argv[])
         scanf("%d", &quantum);
     }
     // 3. Initiate and create the scheduler and clock processes.
+    int clk_pid = fork();
+    if(clk_pid == 0) 
+    {
+        printf("Initiate the clk"); 
+        execv("./clk.out", (char *[]){"./clk.out", NULL});
+    }
+    else 
+    {
+        printf("Error in fork() to execv the clk");
+        exit(-1);
+    }
+    int sched_pid = fork();
+    if(sched_pid == 0) 
+    {
+        printf("Initiate the Scheduler"); 
+        execv("./scheduler.out", (char *[]){"./scheduler.out", NULL});
+    }
+    else 
+    {
+        printf("Error in fork() to execv the scheduler");
+        exit(-1);
+    }
     // 4. Use this function after creating the clock process to initialize clock
-        // initClk();
+    initClk();
     // To get time use this
-        // int x = getClk();
-        // printf("current time is %d\n", x);
+    int x = getClk();
+    printf("current time is %d\n", x);
     // TODO Generation Main Loop
     // 5. Create a data structure for processes and provide it with its parameters.
     // 6. Send the information to the scheduler at the appropriate time.
     // 7. Clear clock resources
-        // destroyClk(true);
+    destroyClk(true);
 }
 
 void clearResources(int signum)
