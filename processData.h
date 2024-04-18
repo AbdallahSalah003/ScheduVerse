@@ -6,6 +6,10 @@ typedef struct
     int priority;
     int runningtime;
     int id;
+    int remainingTime;
+    int waitingTime;
+    int startTime;
+
 } ProcessData;
 
 ProcessData *constructProcess(int id, int arrive, int run, int prio)
@@ -15,5 +19,6 @@ ProcessData *constructProcess(int id, int arrive, int run, int prio)
     tmp->arrivaltime = arrive;
     tmp->runningtime= run;
     tmp->priority = prio;
+    tmp->remainingTime = run;
     return tmp;
 }
