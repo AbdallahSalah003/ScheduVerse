@@ -7,10 +7,10 @@ Queue* constructQueue()
     queue->front = NULL;
     return queue;
 }
-bool push(Queue* queue, ProcessData pData)
+bool push(Queue* queue, ProcessData* pData)
 {
     struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
-    newNode->pData = pData;
+    newNode->pData = *pData;
     newNode->next = NULL;
     if(queue->back == NULL) 
     {

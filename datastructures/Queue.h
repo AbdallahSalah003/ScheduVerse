@@ -2,7 +2,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "../process-data/processData.h"
+#include "../processData.h"
 
 struct Node
 {
@@ -17,7 +17,7 @@ struct
 } typedef Queue;
 
 Queue* constructQueue();
-bool push(Queue* queue, ProcessData pData);
+bool push(Queue* queue, ProcessData *pData);
 struct Node* pop(Queue* queue);
 bool empty(Queue* queue);
 struct Node* peek(Queue* queue);
