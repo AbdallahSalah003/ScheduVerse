@@ -1,3 +1,4 @@
+#include <signal.h>
 #include "headers.h"
 #include "./datastructures/Queue.h"
 #include "./communication/msg_queue.h"
@@ -70,10 +71,10 @@ int main(int argc, char * argv[])
         MsgBuff msg = constructMsg(prcss);
         sendMsg(msg);
     }
-    // TODO : We need to send a signal to scheduler (no processes left)
+    // TODO : We need to send a signal to scheduler (when no processes left)
+    
+    kill(sched_pid, SIGUSR1);
 
-    // 7. Clear clock resources
-    destroyClk(true);
     // clear resources safely and make handler simple as possible
     while(!safeToDestroyMsgQueue);
     while(!isMsgQueueEmpty())
@@ -82,6 +83,17 @@ int main(int argc, char * argv[])
         sleep(2);
     }
     destroyMsgQueue();
+
+
+    // 7. Clear clock resources
+    // Here we need to wait the scheduler to finish then only we can destroy the CLK   
+    int status;
+    waitpid(sched_pid, &status, 0);
+    if (WIFEXITED(status)) 
+    {
+        printf("Scheduler exited with status %d\n", WEXITSTATUS(status));
+    }
+    destroyClk(true);
     return 0;
 }
 
