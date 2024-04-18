@@ -26,7 +26,7 @@ int main(int agrc, char * argv[])
             if(!currQuantum && remaining!=0)
             {
                 // TODO: Send  signal to scheduler stating that quantum is finised
-                kill(getppid(), SIGCHLD);
+                kill(getppid(), SIGRTMIN+1);
                 // TODO: raise stop signal
                 raise(SIGSTOP); 
                 // the scheduler will send SIGCONT to process 
@@ -39,7 +39,7 @@ int main(int agrc, char * argv[])
         prvTime = time;
     }
     // TODO: Send signal to scheduler stating termination
-    kill(getppid(), SIGUSR1);
+    kill(getppid(), SIGCHLD);
     destroyClk(false);
     
     return 0;

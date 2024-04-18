@@ -9,6 +9,10 @@ int isThereProcesses = 1;
 void addProcessToReady(ProcessData *prcss);
 void recvProcess(int sig_num);
 
+void processQuantumHasFinished(int signum);
+void processTerminated(int signum);
+
+
 void HPF();
 void STRN();
 void RR(int quantum);
@@ -19,11 +23,14 @@ struct Node *runningProcess;
 
 int schedAlgo;
 int nProcesses = 0, totRunningTime = 0;
+int isThereProcessRunning = 0;
 
 int main(int argc, char * argv[])
 {
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
+    signal(SIGRTMIN+1, processQuantumHasFinished);
+    signal(SIGCHLD, processTerminated);
     initClk();
     
     //TODO implement the scheduler :)
@@ -55,6 +62,26 @@ void noComingProcsses(int signum)
 {
     isThereProcesses = 0;
     signal(SIGUSR1, noComingProcsses);
+}
+void processQuantumHasFinished(int signum)
+{
+    isThereProcessRunning = 0;
+    // TODO: perform any needed calculations
+    // TODO: switch to the next process
+    // handle the variable isThereProcessRunning
+    // .. etc
+    // if the next process is previously run 
+    // then we just send SIGCONT to it
+    signal(SIGRTMIN+1, processQuantumHasFinished);
+}
+void processTerminated(int signum)
+{
+    // TODO: perform any needed calculations
+    // TODO: switch to next process
+    // handle the variable isThereProcessRunning
+    // if the next process is previously run 
+    // then we just send SIGCONT to it
+    signal(SIGCLD, processTerminated);
 }
 void addProcessToReady(ProcessData *prcss)
 {
@@ -99,14 +126,11 @@ void STRN()
 }
 void RR(int quantum)
 {
-    int running = 0;
-    int WAIT = 1; // if queue is empty and there is no running process
-    // we must not stop the algorithm until there is no comming processes
-    // thus we use the var WAIT = 1;
-    while (!empty(queue) || running || WAIT)
+    // isThereProcesses will be equal to 0 if no comming processes
+    while (!empty(queue) || isThereProcessRunning || isThereProcesses)
     {
         if(empty(queue)) continue;
-        if(!running)
+        if(!isThereProcessRunning)
         {
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
