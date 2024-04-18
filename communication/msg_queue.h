@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <sys/msg.h>
 
-#include "../process-data/processData.h"
+#include "../processData.h"
 
 int globalMsgQueueID;
 
