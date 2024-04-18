@@ -54,11 +54,13 @@ int main(int argc, char * argv[])
     }
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
+    
+     
+    constructMsgQueue();
+
     // To get time use this
     int x = getClk();
     printf("current time is %d\n", x);
-     
-    constructMsgQueue();
     // TODO Generation Main Loop
     while (!empty(queue))
     {
@@ -71,6 +73,8 @@ int main(int argc, char * argv[])
         // 6. Send the information to the scheduler at the appropriate time.
         MsgBuff msg = constructMsg(prcss);
         sendMsg(msg);
+        // send a signal to scheduler telling that new process has been sent
+        kill(sched_pid, SIGUSR2);
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
     
