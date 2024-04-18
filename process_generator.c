@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "./datastructures/Queue.h"
+#include "./communication/msg_queue.h"
 
 Queue *queue;
 
@@ -7,16 +8,10 @@ void clearResources(int);
 void readInputFile(char *inputPath);
 bool validateArguments(int *schedAlgo, int *quantum);
 
+int safeToDestroyMsgQueue = 0;
+
 int main(int argc, char * argv[])
 {
-    /*
-    int *schedAlgo, *quantum;
-    bool chechArgs = validateArguments(argc, argv, schedAlgo, quantum);
-    if(!chechArgs) 
-    {
-        exit(-1);
-    }
-    */
     signal(SIGINT, clearResources);
     // TODO Initialization
     queue = constructQueue(); 
@@ -47,6 +42,7 @@ int main(int argc, char * argv[])
     if(sched_pid == 0) 
     {
         printf("Initiate the Scheduler"); 
+        // #TODO HERE WE WILL SEND SOME ARGS TO THE SCHEDULER
         execv("./scheduler.out", (char *[]){"./scheduler.out", NULL});
     }
     else 
@@ -59,16 +55,42 @@ int main(int argc, char * argv[])
     // To get time use this
     int x = getClk();
     printf("current time is %d\n", x);
+     
+    constructMsgQueue();
     // TODO Generation Main Loop
-    // 5. Create a data structure for processes and provide it with its parameters.
-    // 6. Send the information to the scheduler at the appropriate time.
+    while (!empty(queue))
+    {
+        // 5. Create a data structure for processes and provide it with its parameters.
+        ProcessData prcss = pop(queue)->pData;
+        while(prcss.arrivaltime != x)
+        {
+            x = getClk();
+        }
+        // 6. Send the information to the scheduler at the appropriate time.
+        MsgBuff msg = constructMsg(prcss);
+        sendMsg(msg);
+    }
+    // TODO : We need to send a signal to scheduler (no processes left)
+
     // 7. Clear clock resources
     destroyClk(true);
+    // clear resources safely and make handler simple as possible
+    while(!safeToDestroyMsgQueue);
+    while(!isMsgQueueEmpty())
+    {
+        // AVOID PULLING IN LOOPS
+        sleep(2);
+    }
+    destroyMsgQueue();
+    return 0;
 }
 
 void clearResources(int signum)
 {
     //TODO Clears all resources in case of interruption
+    printf("Termination After Sending All Msgs, Please wait ....");
+    safeToDestroyMsgQueue = 1;
+    signal(SIGINT, clearResources);
 }
 
 void readInputFile( char *path) 
