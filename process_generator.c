@@ -10,6 +10,7 @@ void readInputFile(char *inputPath);
 bool validateArguments(int schedAlgo, int quantum);
 
 int safeToDestroyMsgQueue = 0;
+int runningTime, arrivalTime, priority, id;
 
 int main(int argc, char * argv[])
 {
@@ -122,9 +123,9 @@ void readInputFile( char *path)
     while (fgets(input, 50, file))
     {
         if(input[0]=='#') continue;
-
-        ProcessData tmp;
-        sscanf(input, "%d %d %d %d", &tmp.id, &tmp.arrivaltime, &tmp.runningtime, &tmp.priority);
+        
+        sscanf(input, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority);
+        ProcessData *tmp = constructProcess(id, arrivalTime, runningTime, priority);
         push(queue, tmp);
     }
     fclose(file);
