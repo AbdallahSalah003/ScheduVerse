@@ -18,7 +18,8 @@ struct
 }typedef priQueue ;
 
 priQueue * constructPriortyQueue();
-bool push(priQueue* pqueue, ProcessData *pData);
+bool pushSRTN(priQueue* pqueue, ProcessData *pData);
+bool pushHPF(priQueue* pqueue, ProcessData *pData);
 struct Node* pop(priQueue* queue);
 bool empty(priQueue* queue);
 struct Node * peek(priQueue* queue);

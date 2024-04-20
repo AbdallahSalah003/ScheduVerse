@@ -1,5 +1,6 @@
 #include "headers.h"
 #include "./datastructures/Queue.h"
+#include "./datastructures/priQueue.h"
 #include "./communication/msg_queue.h"
 
 
@@ -14,10 +15,12 @@ void processTerminated(int signum);
 
 
 void HPF();
-void STRN();
+void SRTN();
 void RR(int quantum);
 
 Queue *queue;
+priQueue * pqueue ;
+
 
 struct Node *runningProcess;
 
@@ -47,7 +50,8 @@ int main(int argc, char * argv[])
     }
     else if(schedAlgo == 2)
     {
-        STRN();
+        pqueue = constructPriortyQueue(); 
+        SRTN();
     }
     else 
     {
@@ -88,9 +92,26 @@ void addProcessToReady(ProcessData *prcss)
     if(schedAlgo == 1)
     {
 
+        // we will assume that HPF non preemitive 
+    
+        // if the assumtion is false 
+        // modify it and notify that 
+        // check if thier is runnig process then compare between the pri if the new process
+        // has less pri so stop runnin process and send it to ready then run new process 
+        
+        pushHPF(pqueue,prcss);
+    
+    
     }
     else if(schedAlgo == 2)
     {
+        // we will assume that SRTN non preemitive 
+        pushSRTN(pqueue,prcss);
+
+        // if the assumtion is false 
+        // modify it and notify that 
+        // check if thier is runnig process then compare between the RT if the new process
+        // has less time so stop runnin process and send it to ready then run new process 
 
     }
     else 
@@ -118,11 +139,32 @@ void recvProcess(int sig_num)
 }
 void HPF()
 {
-
+     while (!empty(pqueue)||isThereProcessRunning||isThereProcesses)
+    {
+         if(empty(pqueue)) continue;
+         if(!isThereProcessRunning)
+        {
+            struct Node * process = pop(pqueue);
+            runningProcess = process;
+            isThereProcessRunning=1;
+            // TODO actually create and run the process
+        }
+    }
 }
-void STRN()
+void SRTN()
 {
-
+    while (!empty(pqueue)||isThereProcessRunning||isThereProcesses)
+    {
+         if(empty(pqueue)) continue;
+         if(!isThereProcessRunning)
+        {
+            struct Node * process = pop(pqueue);
+            runningProcess = process;
+            isThereProcessRunning=1;
+            // TODO actually create and run the process
+        }
+    }
+    
 }
 void RR(int quantum)
 {
@@ -134,6 +176,7 @@ void RR(int quantum)
         {
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
+            isThereProcessRunning=1;
             // TODO actually create and run the process
         }
     }

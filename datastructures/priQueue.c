@@ -11,7 +11,7 @@ priQueue * constructPriortyQueue(){
 //to use the same pri queue files for both this fuction must have two version for ex HPFpush and SRTpush 
 // TODO: implement HPFpush 
 // the following implementation is for SRTpush version
-bool push(priQueue* pqueue, ProcessData *pData){
+bool pushSRTN(priQueue* pqueue, ProcessData *pData){
     
     struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
     newNode->pData = *pData;
@@ -51,6 +51,44 @@ bool push(priQueue* pqueue, ProcessData *pData){
     return 1 ;       
 }
 
+bool pushHPF(priQueue* pqueue, ProcessData *pData){
+    
+    struct Node* newNode = (struct Node*)malloc(sizeof(struct Node));
+    newNode->pData = *pData;
+    newNode->next = NULL; 
+    // check if the queu is empty 
+    if(!pqueue->front){
+        pqueue->front=newNode;
+        pqueue->back=newNode;    
+    }else{
+         // place the node in it is right place 
+         // we will use an approch which is 
+         // when found a node with a priorty greater than the pri of the new node 
+         // we will place the node before it   
+         {
+            struct Node * ptr = pqueue->front;
+            struct Node * addAfterMe = NULL ; 
+            while (ptr&&ptr->pData.priority<=newNode->pData.priority)
+            {
+                addAfterMe=ptr;
+                ptr=ptr->next;
+            }
+            if(!addAfterMe){
+                // place the new node in the front ; 
+                newNode->next=pqueue->front; 
+                pqueue->front=newNode; 
+            }else{
+                //place the newnode 
+                newNode->next=ptr;
+                addAfterMe->next=newNode;
+            }
+            
+         }
+   
+    }
+
+    return 1 ;       
+}
 
 struct Node* pop(priQueue* pqueue) 
 {
