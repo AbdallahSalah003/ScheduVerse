@@ -1,4 +1,5 @@
 #pragma once
+#include "globalEnums.h"
 
 typedef struct
 {
@@ -7,9 +8,10 @@ typedef struct
     int runningtime;
     int id;
     int remainingTime;
-    int waitingTime;
     int startTime;
-
+    int getCPUBefore;
+    int realID;
+    State state;
 } ProcessData;
 
 ProcessData *constructProcess(int id, int arrive, int run, int prio)
@@ -20,5 +22,6 @@ ProcessData *constructProcess(int id, int arrive, int run, int prio)
     tmp->runningtime= run;
     tmp->priority = prio;
     tmp->remainingTime = run;
+    tmp->getCPUBefore = 0;
     return tmp;
 }
