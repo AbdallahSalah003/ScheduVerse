@@ -31,7 +31,8 @@ int nProcesses = 0, totRunningTime = 0;
 int isThereProcessRunning = 0;
 
 int main(int argc, char * argv[])
-{
+{   
+    printf("iam here");
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
     signal(SIGRTMIN+1, processQuantumHasFinished);
@@ -116,8 +117,6 @@ void addProcessToReady(ProcessData *prcss)
     }
     else 
     {
-        // we assume that the new process will be at the back of queue
-        // even if there is a process just finish its quantum
         prcss->state = 1;  // READY
         push(queue, prcss);
     }
@@ -136,15 +135,18 @@ void recvProcess(int sig_num)
     nProcesses += 1;
     totRunningTime += msg.process.runningtime;
     addProcessToReady(&msg.process);
+
+
+    
 }
 void HPF()
 {
-     while (!empty(pqueue)||isThereProcessRunning||isThereProcesses)
+     while (!priempty(pqueue)||isThereProcessRunning||isThereProcesses)
     {
-         if(empty(pqueue)) continue;
+         if(priempty(pqueue)) continue;
          if(!isThereProcessRunning)
         {
-            struct Node * process = pop(pqueue);
+            struct priNode * process = pripop(pqueue);
             runningProcess = process;
             isThereProcessRunning=1;
             // TODO actually create and run the process
@@ -153,12 +155,12 @@ void HPF()
 }
 void SRTN()
 {
-    while (!empty(pqueue)||isThereProcessRunning||isThereProcesses)
+    while (!priempty(pqueue)||isThereProcessRunning||isThereProcesses)
     {
-         if(empty(pqueue)) continue;
+         if(priempty(pqueue)) continue;
          if(!isThereProcessRunning)
         {
-            struct Node * process = pop(pqueue);
+            struct priNode * process = pripop(pqueue);
             runningProcess = process;
             isThereProcessRunning=1;
             // TODO actually create and run the process
@@ -182,7 +184,7 @@ void RR(int quantum)
                 kill(SIGCONT, runningProcess->pData.realID);
             }
             else {
-                runningProcess->pData.getCPUBefore = 1;
+                
                 runProcess(&(runningProcess->pData), quantum);
                 // run a new process 
             }
@@ -196,14 +198,18 @@ void runProcess(ProcessData *pData, int isRR) {
     {
         isRR = pData->runningtime;
     }
+
     int pid = fork();
-    runningProcess->pData.realID = pid;
-    runningProcess->pData.startTime = getClk();
-    runningProcess->pData.state = 2; // READY
+    
     if(pid == 0) 
     {
         execv("./process.out", (char *[]){"./process.out", (char *)pData->runningtime, (char *)isRR});
     }
+            runningProcess->pData.realID = pid;
+            runningProcess->pData.startTime = getClk();
+            runningProcess->pData.state = 2; // READY
+            runningProcess->pData.getCPUBefore = 1;
+
     // pid realID of the running process
     /*
     int num = 42;

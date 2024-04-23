@@ -36,23 +36,19 @@ int main(int argc, char * argv[])
         printf("Initiate the clk"); 
         execv("./clk.out", (char *[]){"./clk.out", NULL});
     }
-    else 
-    {
-        printf("Error in fork() to execv the clk");
-        exit(-1);
-    }
+    
     int sched_pid = fork();
     if(sched_pid == 0) 
     {
         printf("Initiate the Scheduler"); 
         // #TODO HERE WE WILL SEND SOME ARGS TO THE SCHEDULER
-        execv("./scheduler.out", (char *[]){"./scheduler.out", schedAlgo, quantum, NULL});
+        
+        execv("./scheduler.out", (char *[]){"./scheduler.out","3","2", NULL});
     }
-    else 
-    {
-        printf("Error in fork() to execv the scheduler");
-        exit(-1);
+    if(sched_pid==-1){
+        printf("error in forking sched"); 
     }
+    
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
     
