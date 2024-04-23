@@ -13,6 +13,8 @@ void recvProcess(int sig_num);
 void processQuantumHasFinished(int signum);
 void processTerminated(int signum);
 
+void runProcess(ProcessData *pData,int isRR);
+
 
 void HPF();
 void SRTN();
@@ -69,22 +71,20 @@ void noComingProcsses(int signum)
 }
 void processQuantumHasFinished(int signum)
 {
+    push(queue, &(runningProcess->pData));
     isThereProcessRunning = 0;
-    // TODO: perform any needed calculations
-    // TODO: switch to the next process
-    // handle the variable isThereProcessRunning
-    // .. etc
-    // if the next process is previously run 
-    // then we just send SIGCONT to it
     signal(SIGRTMIN+1, processQuantumHasFinished);
 }
 void processTerminated(int signum)
 {
-    // TODO: perform any needed calculations
-    // TODO: switch to next process
-    // handle the variable isThereProcessRunning
-    // if the next process is previously run 
-    // then we just send SIGCONT to it
+    runningProcess->pData.state = 4; // TERMINATED
+    int finishTime = getClk();
+    int waitingTime = finishTime - runningProcess->pData.runningtime;
+    double turnaroundTime = finishTime - runningProcess->pData.arrivaltime;
+    double weightedTurnaroundTime = turnaroundTime/runningProcess->pData.runningtime; // check if right
+    // TODO : print to the output file
+
+    isThereProcessRunning = 0;
     signal(SIGCLD, processTerminated);
 }
 void addProcessToReady(ProcessData *prcss)
@@ -118,6 +118,7 @@ void addProcessToReady(ProcessData *prcss)
     {
         // we assume that the new process will be at the back of queue
         // even if there is a process just finish its quantum
+        prcss->state = 1;  // READY
         push(queue, prcss);
     }
 }
@@ -135,7 +136,6 @@ void recvProcess(int sig_num)
     nProcesses += 1;
     totRunningTime += msg.process.runningtime;
     addProcessToReady(&msg.process);
-    
 }
 void HPF()
 {
@@ -177,8 +177,40 @@ void RR(int quantum)
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
             isThereProcessRunning=1;
+            if(runningProcess->pData.getCPUBefore) {
+                // send SIGCONT 
+                kill(SIGCONT, runningProcess->pData.realID);
+            }
+            else {
+                runningProcess->pData.getCPUBefore = 1;
+                runProcess(&(runningProcess->pData), quantum);
+                // run a new process 
+            }
             // TODO actually create and run the process
         }
     }
     
+}
+void runProcess(ProcessData *pData, int isRR) {
+    if(!isRR) 
+    {
+        isRR = pData->runningtime;
+    }
+    int pid = fork();
+    runningProcess->pData.realID = pid;
+    runningProcess->pData.startTime = getClk();
+    runningProcess->pData.state = 2; // READY
+    if(pid == 0) 
+    {
+        execv("./process.out", (char *[]){"./process.out", (char *)pData->runningtime, (char *)isRR});
+    }
+    // pid realID of the running process
+    /*
+    int num = 42;
+    char str[ENOUGH]; // Define a buffer to hold the string
+    sprintf(str, "%d", num);
+    */
+   // TODO : set pData->realID int the PCB
+   // make any calculations and change values in PCB
+   
 }
