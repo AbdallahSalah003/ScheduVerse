@@ -4,6 +4,13 @@
 int remainingtime;
 int remaining, quantum, currQuantum, time;
 int prvTime;
+int min(int a, int b) {
+    if (a < b)
+        return a;
+    else
+        return b;
+}
+
 int main(int agrc, char * argv[])
 {
     initClk();
@@ -12,19 +19,18 @@ int main(int agrc, char * argv[])
     quantum = atoi(argv[2]);
     currQuantum =  quantum;
     prvTime = getClk();
-
-    while (remainingtime > 0)
+    while (1)
     {
         time = getClk();
-        if(time != prvTime) // time is passed by one 
-        {
-            remaining-=1;
-            if(currQuantum > 0)
-            {
-                currQuantum-=1;
+        int compare = min(remainingtime, quantum);
+        if(prvTime+compare <= time) {
+            printf("currTime: %d , startTime: %d\n", time, prvTime+quantum);
+            
+            remainingtime -= compare;
+            if(remainingtime <= 0) {
+                break;
             }
-            if(!currQuantum && remaining!=0)
-            {
+            else {
                 // TODO: Send  signal to scheduler stating that quantum is finised
                 kill(getppid(), SIGRTMIN+1);
                 // TODO: raise stop signal
@@ -32,15 +38,12 @@ int main(int agrc, char * argv[])
                 // the scheduler will send SIGCONT to process 
                 // when the process recivies a SIGCONT signal
                 // it will need to continueu with an updated quantum
-                currQuantum = quantum;
             }
-            time = getClk();
         }
-        prvTime = time;
     }
     // TODO: Send signal to scheduler stating termination
     kill(getppid(), SIGCHLD);
-    destroyClk(false);
-    
+
+    destroyClk(false);    
     return 0;
 }
