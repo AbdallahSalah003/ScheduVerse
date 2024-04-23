@@ -127,7 +127,7 @@ void recvProcess(int sig_num)
     // has been sent through MsgQueue
     // TODO:  recv the processes and push it in the readyQueue
     MsgBuff msg;
-    int check = msgrcv(globalMsgQueueID, &msg, sizeof(msg.process), 12, !IPC_NOWAIT);
+    int check = msgrcv(globalMsgQueueID, &msg, sizeof(msg.process), 0, 0666|!IPC_NOWAIT);
     if(check == -1)
     {
         perror("Error receving messages");
