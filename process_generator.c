@@ -21,7 +21,7 @@ int main(int argc, char * argv[])
     readInputFile("processes.txt");
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int schedAlgo, quantum = -1;
-    printf("Choode Scheduling Algorithm:\n 1: HPF \n 2: SRTN \n 3: RR \n");
+    printf("Choode Scheduling Algorithm:\n1: HPF \n2: SRTN \n3: RR\n");
     scanf("%d", &schedAlgo);
     if(schedAlgo == 3) 
     {
@@ -29,35 +29,42 @@ int main(int argc, char * argv[])
         scanf("%d", &quantum);
     }
     validateArguments(schedAlgo, quantum);
+    
+    constructMsgQueue();
+    
     // 3. Initiate and create the scheduler and clock processes.
     int clk_pid = fork();
+    if(clk_pid == -1) 
+    {
+        printf("Error in fork clk\n");
+    }
     if(clk_pid == 0) 
     {
-        printf("Initiate the clk"); 
-        execv("./clk.out", (char *[]){"./clk.out", NULL});
+        execvp("./clk.out", (char *[]){"./clk.out", NULL});
     }
-    
     int sched_pid = fork();
+    if(sched_pid == -1) 
+    {
+        printf("Error in fork scheduler\n");
+    }
+    char algo_str[32];
+        char quantum_str[32];
+        sprintf(algo_str,  "%d", schedAlgo);
+        sprintf(quantum_str, "%d", quantum);
     if(sched_pid == 0) 
     {
-        printf("Initiate the Scheduler"); 
         // #TODO HERE WE WILL SEND SOME ARGS TO THE SCHEDULER
-        
-        execv("./scheduler.out", (char *[]){"./scheduler.out","3","2", NULL});
+        execvp("./scheduler.out", (char *[]){"./scheduler.out",algo_str,quantum_str, NULL});
     }
-    if(sched_pid==-1){
-        printf("error in forking sched"); 
-    }
+    
     
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
-    
-     
-    constructMsgQueue();
+
 
     // To get time use this
     int x = getClk();
-    printf("current time is %d\n", x);
+    printf("current time is %d\n-------------------------------------------------------------------\n", x);
     // TODO Generation Main Loop
     while (!empty(queue))
     {
@@ -68,8 +75,11 @@ int main(int argc, char * argv[])
             x = getClk();
         }
         // 6. Send the information to the scheduler at the appropriate time.
-        MsgBuff msg = constructMsg(prcss);
-        sendMsg(msg);
+        MsgBuff newMsg;
+        newMsg.mtype = 12;
+        newMsg.process = prcss;
+        printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        sendMsg(newMsg);
         // send a signal to scheduler telling that new process has been sent
         kill(sched_pid, SIGUSR2);
     }
