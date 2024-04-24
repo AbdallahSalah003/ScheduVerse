@@ -37,7 +37,10 @@ int main(int agrc, char * argv[])
             // TODO: raise stop signal
             raise(SIGSTOP); 
             // the scheduler will send SIGCONT to process 
+            prvTime = getClk();
         }
+
+        
     }
     // TODO: Send signal to scheduler stating termination
     kill(getppid(), SIGRTMIN+2);

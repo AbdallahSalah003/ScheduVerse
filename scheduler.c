@@ -84,7 +84,7 @@ void processTerminated(int signum)
 {
     runningProcess->pData.state = 4; // TERMINATED
     int finishTime = getClk();
-    int waitingTime = finishTime - runningProcess->pData.runningtime;
+    int waitingTime = finishTime - runningProcess->pData.runningtime - runningProcess->pData.arrivaltime;
     double turnaroundTime = finishTime - runningProcess->pData.arrivaltime;
     double weightedTurnaroundTime = turnaroundTime/runningProcess->pData.runningtime; // check if right
     // TODO : print to the output file
@@ -201,7 +201,7 @@ void RR(int quantum)
     
 }
 void runProcess(int isRR) {
-    if(!isRR) 
+    if(!isRR || !isThereProcesses)  // not RR || last process in RR 
     {
         isRR = runningProcess->pData.runningtime;
     }
@@ -220,14 +220,5 @@ void runProcess(int isRR) {
     runningProcess->pData.startTime = getClk();
     runningProcess->pData.state = 2; // READY
     runningProcess->pData.getCPUBefore = 1;
-
-    // pid realID of the running process
-    /*
-    int num = 42;
-    char str[ENOUGH]; // Define a buffer to hold the string
-    sprintf(str, "%d", num);
-    */
-   // TODO : set pData->realID int the PCB
-   // make any calculations and change values in PCB
    
 }
