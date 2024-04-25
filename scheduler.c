@@ -77,7 +77,10 @@ void noComingProcsses(int signum)
 void processQuantumHasFinished(int signum)
 {
     printf("Process with id %d has finished a quantum\n", runningProcess->pData.id);
-     if(schedAlgo==3)
+    
+    runningProcess->pData.state=1 ; 
+
+    if(schedAlgo==3)
     push(queue, &(runningProcess->pData));
     if(schedAlgo==1)
     pushHPF(pqueue,&(runningProcess->pData));
@@ -150,12 +153,14 @@ void HPF()
             runningProcess = process;
             runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
-            if(runningProcess->pData.getCPUBefore) {
+             if((runningProcess->pData.getCPUBefore) == 1) {
+                printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
-                kill(SIGCONT, runningProcess->pData.realID);
+                kill(runningProcess->pData.realID, SIGCONT);
             }
             else {
-                runProcess(&(runningProcess->pData),0);
+                printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                runProcess(0);
                 // run a new process 
             }
 
@@ -174,12 +179,14 @@ void SRTN()
             runningProcess = process;
             runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
-            if(runningProcess->pData.getCPUBefore) {
+              if((runningProcess->pData.getCPUBefore) == 1) {
+                printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
-                kill(SIGCONT, runningProcess->pData.realID);
+                kill(runningProcess->pData.realID, SIGCONT);
             }
             else {
-                runProcess(&(runningProcess->pData),0);
+                printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                runProcess(0);
                 // run a new process 
             }
         }
