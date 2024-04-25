@@ -13,7 +13,7 @@ void recvProcess(int sig_num);
 void processQuantumHasFinished(int signum);
 void processTerminated(int signum);
 
-void runProcess(ProcessData *pData,int isRR);
+void runProcess(int isRR);
 
 
 void HPF();
@@ -29,14 +29,14 @@ struct Node *runningProcess;
 int schedAlgo;
 int nProcesses = 0, totRunningTime = 0;
 int isThereProcessRunning = 0;
+int MsyQueueID;
 
 int main(int argc, char * argv[])
 {   
-    printf("iam here");
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
     signal(SIGRTMIN+1, processQuantumHasFinished);
-    signal(SIGCHLD, processTerminated);
+    signal(SIGRTMIN+2, processTerminated);
     initClk();
     
     //TODO implement the scheduler :)
@@ -46,6 +46,9 @@ int main(int argc, char * argv[])
     {
         quantum = atoi(argv[2]);
     }
+
+    key_t msg_key = ftok("/home/abdallahsalah/Desktop/ScheduVerse/communication/keyfile", 'A');
+    MsyQueueID = msgget(msg_key, 0666 | IPC_CREAT);
 
     if(schedAlgo == 1)
     {   
@@ -72,8 +75,9 @@ void noComingProcsses(int signum)
     signal(SIGUSR1, noComingProcsses);
 }
 void processQuantumHasFinished(int signum)
-{   
-    if(schedAlgo==3)
+{
+    printf("Process with id %d has finished a quantum\n", runningProcess->pData.id);
+     if(schedAlgo==3)
     push(queue, &(runningProcess->pData));
     if(schedAlgo==1)
     pushHPF(pqueue,&(runningProcess->pData));
@@ -87,13 +91,14 @@ void processTerminated(int signum)
 {
     runningProcess->pData.state = 4; // TERMINATED
     int finishTime = getClk();
-    int waitingTime = finishTime - runningProcess->pData.runningtime;
+    int waitingTime = finishTime - runningProcess->pData.runningtime - runningProcess->pData.arrivaltime;
     double turnaroundTime = finishTime - runningProcess->pData.arrivaltime;
     double weightedTurnaroundTime = turnaroundTime/runningProcess->pData.runningtime; // check if right
     // TODO : print to the output file
-
+    printf("------TERMINATED------>> process id: %d, arrivalTime: %d, runningTime: %d, startTiem: %d, finishTime: %d, waitingTime: %d\n", runningProcess->pData.id, runningProcess->pData.arrivaltime, 
+    runningProcess->pData.runningtime, runningProcess->pData.startTime, finishTime, waitingTime);
     isThereProcessRunning = 0;
-    signal(SIGCLD, processTerminated);
+    signal(SIGRTMIN+2, processTerminated);
 }
 void addProcessToReady(ProcessData *prcss)
 {
@@ -121,7 +126,8 @@ void recvProcess(int sig_num)
     // has been sent through MsgQueue
     // TODO:  recv the processes and push it in the readyQueue
     MsgBuff msg;
-    int check = msgrcv(globalMsgQueueID, &msg, sizeof(msg.process), 12, !IPC_NOWAIT);
+    int check = msgrcv(MsyQueueID, &msg, sizeof(msg.process), 0, IPC_NOWAIT);
+    printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
     if(check == -1)
     {
         perror("Error receving messages");
@@ -192,13 +198,14 @@ void RR(int quantum)
             runningProcess = topProcess;
             runningProcess->pData.state=2 ; 
             isThereProcessRunning=1;
-            if(runningProcess->pData.getCPUBefore) {
+            if((runningProcess->pData.getCPUBefore) == 1) {
+                printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
-                kill(SIGCONT, runningProcess->pData.realID);
+                kill(runningProcess->pData.realID, SIGCONT);
             }
             else {
-                
-                runProcess(&(runningProcess->pData), quantum);
+                printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                runProcess(quantum);
                 // run a new process 
             }
             // TODO actually create and run the process
@@ -206,30 +213,25 @@ void RR(int quantum)
     }
     
 }
-void runProcess(ProcessData *pData, int isRR) {
-    if(!isRR) 
+void runProcess(int isRR) {
+    if(!isRR || !isThereProcesses)  // not RR || last process in RR 
     {
-        isRR = pData->runningtime;
+        isRR = runningProcess->pData.runningtime;
     }
-
+    char runningtime_str[32];
+    char isRR_str[32];
+    sprintf(runningtime_str, "%d", (runningProcess->pData.runningtime));
+    sprintf(isRR_str, "%d", isRR);
     int pid = fork();
     
     if(pid == 0) 
     {
-        execv("./process.out", (char *[]){"./process.out", (char *)pData->runningtime, (char *)isRR});
+        execvp("./process.out", (char *[]){"./process.out", runningtime_str, isRR_str, NULL});
     }
-            runningProcess->pData.realID = pid;
-            runningProcess->pData.startTime = getClk();
-            runningProcess->pData.state = 2; // READY
-            runningProcess->pData.getCPUBefore = 1;
 
-    // pid realID of the running process
-    /*
-    int num = 42;
-    char str[ENOUGH]; // Define a buffer to hold the string
-    sprintf(str, "%d", num);
-    */
-   // TODO : set pData->realID int the PCB
-   // make any calculations and change values in PCB
+    runningProcess->pData.realID = pid;
+    runningProcess->pData.startTime = getClk();
+    runningProcess->pData.state = 2; // READY
+    runningProcess->pData.getCPUBefore = 1;
    
 }

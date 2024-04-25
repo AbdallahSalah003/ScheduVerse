@@ -23,26 +23,27 @@ int main(int agrc, char * argv[])
     {
         time = getClk();
         int compare = min(remainingtime, quantum);
-        if(prvTime+compare <= time) {
-            printf("currTime: %d , startTime: %d\n", time, prvTime+quantum);
-            
-            remainingtime -= compare;
-            if(remainingtime <= 0) {
-                break;
-            }
-            else {
-                // TODO: Send  signal to scheduler stating that quantum is finised
-                kill(getppid(), SIGRTMIN+1);
-                // TODO: raise stop signal
-                raise(SIGSTOP); 
-                // the scheduler will send SIGCONT to process 
-                // when the process recivies a SIGCONT signal
-                // it will need to continueu with an updated quantum
-            }
+        while (prvTime+compare>time)
+        {
+            time = getClk();
         }
+        remainingtime -= compare;
+        if(remainingtime <= 0) {
+            break;
+        }
+        else {
+            // TODO: Send  signal to scheduler stating that quantum is finised
+            kill(getppid(), SIGRTMIN+1);
+            // TODO: raise stop signal
+            raise(SIGSTOP); 
+            // the scheduler will send SIGCONT to process 
+            prvTime = getClk();
+        }
+
+        
     }
     // TODO: Send signal to scheduler stating termination
-    kill(getppid(), SIGCHLD);
+    kill(getppid(), SIGRTMIN+2);
 
     destroyClk(false);    
     return 0;

@@ -18,7 +18,7 @@ struct
 
 void constructMsgQueue()
 {
-    key_t msg_key = ftok("/home/ali-bahr/project/ScheduVerse/communication/keyfile", 'A');
+    key_t msg_key = ftok("/home/abdallahsalah/Desktop/ScheduVerse/communication/keyfile", 'A');
     globalMsgQueueID = msgget(msg_key, 0666 | IPC_CREAT);
 
     if(globalMsgQueueID == -1) 
@@ -26,7 +26,7 @@ void constructMsgQueue()
         perror("Error constructing Msg Queue");
         exit(-1);
     }
-    printf("Msg Queue has been created successfully!");
+    printf("Msg Queue has been created successfully!\n");
 }
 void destroyMsgQueue()
 {
@@ -37,13 +37,6 @@ void destroyMsgQueue()
         exit(-1);
     }
     printf("Msg Queue has been destroyed successfully!");
-}
-MsgBuff constructMsg(ProcessData process) 
-{
-    MsgBuff newMsg;
-    newMsg.mtype = 12;
-    newMsg.process = process;
-    return newMsg;
 }
 bool sendMsg(MsgBuff msg)
 {
