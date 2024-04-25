@@ -160,7 +160,7 @@ void HPF()
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runProcess(0);
+                runProcess(runningProcess->pData.runningtime);
                 // run a new process 
             }
 
@@ -170,6 +170,7 @@ void HPF()
 }
 void SRTN()
 {
+    // edit the algorithm to be preemitive 
     while (!priempty(pqueue)||isThereProcessRunning||isThereProcesses)
     {
          if(priempty(pqueue)) continue;
