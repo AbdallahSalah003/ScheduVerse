@@ -48,7 +48,8 @@ int main(int argc, char * argv[])
     }
 
     if(schedAlgo == 1)
-    {
+    {   
+        pqueue=constructPriortyQueue(); 
         HPF();
     }
     else if(schedAlgo == 2)
@@ -71,8 +72,14 @@ void noComingProcsses(int signum)
     signal(SIGUSR1, noComingProcsses);
 }
 void processQuantumHasFinished(int signum)
-{
+{   
+    if(schedAlgo==3)
     push(queue, &(runningProcess->pData));
+    if(schedAlgo==1)
+    pushHPF(pqueue,&(runningProcess->pData));
+    if(schedAlgo==2)
+    pushSRTN(pqueue,&(runningProcess->pData));
+
     isThereProcessRunning = 0;
     signal(SIGRTMIN+1, processQuantumHasFinished);
 }
@@ -93,26 +100,13 @@ void addProcessToReady(ProcessData *prcss)
     if(schedAlgo == 1)
     {
 
-        // we will assume that HPF non preemitive 
-    
-        // if the assumtion is false 
-        // modify it and notify that 
-        // check if thier is runnig process then compare between the pri if the new process
-        // has less pri so stop runnin process and send it to ready then run new process 
-        
-        pushHPF(pqueue,prcss);
-    
-    
+        prcss->state = 1;  // READY
+        pushHPF(pqueue,prcss);    
     }
     else if(schedAlgo == 2)
     {
-        // we will assume that SRTN non preemitive 
+        prcss->state = 1;  // READY
         pushSRTN(pqueue,prcss);
-
-        // if the assumtion is false 
-        // modify it and notify that 
-        // check if thier is runnig process then compare between the RT if the new process
-        // has less time so stop runnin process and send it to ready then run new process 
 
     }
     else 
@@ -127,7 +121,7 @@ void recvProcess(int sig_num)
     // has been sent through MsgQueue
     // TODO:  recv the processes and push it in the readyQueue
     MsgBuff msg;
-    int check = msgrcv(globalMsgQueueID, &msg, sizeof(msg.process), 0, 0666|!IPC_NOWAIT);
+    int check = msgrcv(globalMsgQueueID, &msg, sizeof(msg.process), 12, !IPC_NOWAIT);
     if(check == -1)
     {
         perror("Error receving messages");
@@ -148,7 +142,17 @@ void HPF()
         {
             struct priNode * process = pripop(pqueue);
             runningProcess = process;
+            runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
+            if(runningProcess->pData.getCPUBefore) {
+                // send SIGCONT 
+                kill(SIGCONT, runningProcess->pData.realID);
+            }
+            else {
+                runProcess(&(runningProcess->pData),0);
+                // run a new process 
+            }
+
             // TODO actually create and run the process
         }
     }
@@ -162,8 +166,16 @@ void SRTN()
         {
             struct priNode * process = pripop(pqueue);
             runningProcess = process;
+            runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
-            // TODO actually create and run the process
+            if(runningProcess->pData.getCPUBefore) {
+                // send SIGCONT 
+                kill(SIGCONT, runningProcess->pData.realID);
+            }
+            else {
+                runProcess(&(runningProcess->pData),0);
+                // run a new process 
+            }
         }
     }
     
@@ -178,6 +190,7 @@ void RR(int quantum)
         {
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
+            runningProcess->pData.state=2 ; 
             isThereProcessRunning=1;
             if(runningProcess->pData.getCPUBefore) {
                 // send SIGCONT 
