@@ -130,17 +130,14 @@ void recvProcess(int sig_num)
     // TODO:  recv the processes and push it in the readyQueue
     MsgBuff msg;
     int check = msgrcv(MsyQueueID, &msg, sizeof(msg.process), 0, IPC_NOWAIT);
-    printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
+    // printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
     if(check == -1)
     {
         perror("Error receving messages");
     }
     nProcesses += 1;
     totRunningTime += msg.process.runningtime;
-    addProcessToReady(&msg.process);
-
-
-    
+    addProcessToReady(&msg.process);    
 }
 void HPF()
 {
@@ -222,7 +219,7 @@ void RR(int quantum)
     
 }
 void runProcess(int isRR) {
-    if(!isRR || !isThereProcesses)  // not RR || last process in RR 
+    if(!isRR)  // not RR || last process in RR 
     {
         isRR = runningProcess->pData.runningtime;
     }

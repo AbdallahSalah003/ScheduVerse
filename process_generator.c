@@ -78,7 +78,7 @@ int main(int argc, char * argv[])
         MsgBuff newMsg;
         newMsg.mtype = 12;
         newMsg.process = prcss;
-        printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        // printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
         sendMsg(newMsg);
         // send a signal to scheduler telling that new process has been sent
         kill(sched_pid, SIGUSR2);
