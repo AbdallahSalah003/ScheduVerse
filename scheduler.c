@@ -166,27 +166,45 @@ void HPF()
     }
 }
 void SRTN()
-{
+{   
+    int prvTime = getClk();
+    
     // edit the algorithm to be preemitive 
     while (!priempty(pqueue)||isThereProcessRunning||isThereProcesses)
     {
-         if(priempty(pqueue)) continue;
-         if(!isThereProcessRunning)
+        if(priempty(pqueue)) continue;
+        if(!isThereProcessRunning)
         {
+            prvTime=getClk(); 
             struct priNode * process = pripop(pqueue);
             runningProcess = process;
             runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
-              if((runningProcess->pData.getCPUBefore) == 1) {
+            if((runningProcess->pData.getCPUBefore) == 1) {
                 printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
                 kill(runningProcess->pData.realID, SIGCONT);
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runProcess(0);
+                runPcss();
                 // run a new process 
             }
+        }else{
+            int time = getClk(); 
+            if(time == prvTime) continue; 
+            runningProcess->pData.remainingTime--;
+            
+            struct priNode * topprocess = pripeek(pqueue);
+            // check if the top of the queue has smaller RT 
+            printf("RT of running process and top is at clk : %d .. %d \n",runningProcess->pData.remainingTime,topprocess->pData.remainingTime);
+            if(topprocess&&(runningProcess->pData.remainingTime > topprocess->pData.remainingTime ) ){
+                // stop it and return it to  the ready queue 
+                kill(runningProcess->pData.realID,SIGRTMIN+1);
+                addProcessToReady(&runningProcess->pData);
+                isThereProcessRunning=0 ; 
+            }
+            prvTime=time ; 
         }
     }
     
@@ -236,7 +254,25 @@ void runProcess(int isRR) {
 
     runningProcess->pData.realID = pid;
     runningProcess->pData.startTime = getClk();
-    runningProcess->pData.state = 2; // READY
+    runningProcess->pData.state = 2; // Running
     runningProcess->pData.getCPUBefore = 1;
    
+}
+
+void runPcss(){
+    char runningtime_str[32];
+    char ind[32] ; 
+    sprintf(runningtime_str, "%d", (runningProcess->pData.runningtime));
+    sprintf(ind,"%d",(runningProcess->pData.id));
+    int pid = fork();
+    
+    if(pid == 0) 
+    {
+        execvp("./pcss.out", (char *[]){"./pcss.out", runningtime_str,ind, NULL});
+    }
+
+    runningProcess->pData.realID = pid;
+    runningProcess->pData.startTime = getClk();
+    runningProcess->pData.state = 2; // Running 
+    runningProcess->pData.getCPUBefore = 1;
 }
