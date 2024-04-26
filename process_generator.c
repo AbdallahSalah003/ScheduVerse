@@ -96,9 +96,7 @@ int main(int argc, char * argv[])
     }
     destroyMsgQueue();
 
-
     // 7. Clear clock resources
-    // Here we need to wait the scheduler to finish then only we can destroy the CLK   
     int status;
     waitpid(sched_pid, &status, 0);
     if (WIFEXITED(status)) 
