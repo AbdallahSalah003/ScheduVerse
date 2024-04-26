@@ -10,10 +10,11 @@ int isThereProcesses = 1;
 void addProcessToReady(ProcessData *prcss);
 void recvProcess(int sig_num);
 
-void processQuantumHasFinished(int signum);
+void processQuantumHasFinished();
 void processTerminated(int signum);
 
-void runProcess(int isRR);
+void runProcess();
+void trackRunningProcess();
 
 
 void HPF();
@@ -30,18 +31,19 @@ int schedAlgo;
 int nProcesses = 0, totRunningTime = 0;
 int isThereProcessRunning = 0;
 int MsyQueueID;
+int RR_isOn = 0;
+int quantum;
 
 int main(int argc, char * argv[])
 {   
+    printf("The Scheduler is executed!\n");
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
-    signal(SIGRTMIN+1, processQuantumHasFinished);
     signal(SIGRTMIN+2, processTerminated);
     initClk();
     
     //TODO implement the scheduler :)
     schedAlgo = atoi(argv[1]);
-    int quantum;
     if(schedAlgo == 3) 
     {
         quantum = atoi(argv[2]);
@@ -62,37 +64,32 @@ int main(int argc, char * argv[])
     }
     else 
     {
+        RR_isOn = 1;
         queue = constructQueue();
         RR(quantum);
     }
     //upon termination release the clock resources.
-    
-    destroyClk(true);
+    kill(getppid(), SIGINT);
+    destroyClk(false);
 }
 void noComingProcsses(int signum)
 {
     isThereProcesses = 0;
     signal(SIGUSR1, noComingProcsses);
 }
-void processQuantumHasFinished(int signum)
+void processQuantumHasFinished()
 {
-    printf("Process with id %d has finished a quantum\n", runningProcess->pData.id);
+    printf("Process with id %d has finished a quantum with remaining time %d\n", runningProcess->pData.id, runningProcess->pData.remainingTime);
     
-    runningProcess->pData.state=1 ; 
+    runningProcess->pData.state=1 ; // READY
 
-    if(schedAlgo==3)
     push(queue, &(runningProcess->pData));
-    if(schedAlgo==1)
-    pushHPF(pqueue,&(runningProcess->pData));
-    if(schedAlgo==2)
-    pushSRTN(pqueue,&(runningProcess->pData));
 
     isThereProcessRunning = 0;
-    signal(SIGRTMIN+1, processQuantumHasFinished);
 }
 void processTerminated(int signum)
 {
-    runningProcess->pData.state = 4; // TERMINATED
+    runningProcess->pData.state = TERMINATED;
     int finishTime = getClk();
     int waitingTime = finishTime - runningProcess->pData.runningtime - runningProcess->pData.arrivaltime;
     double turnaroundTime = finishTime - runningProcess->pData.arrivaltime;
@@ -157,7 +154,7 @@ void HPF()
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runProcess(runningProcess->pData.runningtime);
+                runProcess();
                 // run a new process 
             }
 
@@ -187,7 +184,7 @@ void SRTN()
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runPcss();
+                runProcess();
                 // run a new process 
             }
         }else{
@@ -200,7 +197,7 @@ void SRTN()
             printf("RT of running process and top is at clk : %d .. %d \n",runningProcess->pData.remainingTime,topprocess->pData.remainingTime);
             if(topprocess&&(runningProcess->pData.remainingTime > topprocess->pData.remainingTime ) ){
                 // stop it and return it to  the ready queue 
-                kill(runningProcess->pData.realID,SIGRTMIN+1);
+                kill(runningProcess->pData.realID, SIGRTMIN+1);
                 addProcessToReady(&runningProcess->pData);
                 isThereProcessRunning=0 ; 
             }
@@ -228,38 +225,15 @@ void RR(int quantum)
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runProcess(quantum);
-                // run a new process 
+                runProcess();
             }
-            // TODO actually create and run the process
+            // After quantum finish this function send a SIGSTOP to running process
+            trackRunningProcess();
         }
     }
     
 }
-void runProcess(int isRR) {
-    if(!isRR)  // not RR || last process in RR 
-    {
-        isRR = runningProcess->pData.runningtime;
-    }
-    char runningtime_str[32];
-    char isRR_str[32];
-    sprintf(runningtime_str, "%d", (runningProcess->pData.runningtime));
-    sprintf(isRR_str, "%d", isRR);
-    int pid = fork();
-    
-    if(pid == 0) 
-    {
-        execvp("./process.out", (char *[]){"./process.out", runningtime_str, isRR_str, NULL});
-    }
-
-    runningProcess->pData.realID = pid;
-    runningProcess->pData.startTime = getClk();
-    runningProcess->pData.state = 2; // Running
-    runningProcess->pData.getCPUBefore = 1;
-   
-}
-
-void runPcss(){
+void runProcess() {
     char runningtime_str[32];
     char ind[32] ; 
     sprintf(runningtime_str, "%d", (runningProcess->pData.runningtime));
@@ -268,11 +242,27 @@ void runPcss(){
     
     if(pid == 0) 
     {
-        execvp("./pcss.out", (char *[]){"./pcss.out", runningtime_str,ind, NULL});
+        execvp("./process.out", (char *[]){"./process.out", runningtime_str,ind, NULL});
     }
 
     runningProcess->pData.realID = pid;
     runningProcess->pData.startTime = getClk();
     runningProcess->pData.state = 2; // Running 
     runningProcess->pData.getCPUBefore = 1;
+
+}
+void trackRunningProcess() {
+    if(runningProcess->pData.remainingTime <= quantum) 
+    {
+        sleep(runningProcess->pData.remainingTime);
+        runningProcess->pData.remainingTime = 0;
+    }
+    else 
+    {
+        sleep(quantum);
+        kill(runningProcess->pData.realID, SIGSTOP);  
+        // Update process remaining time   
+        runningProcess->pData.remainingTime -= quantum;
+        processQuantumHasFinished();
+    }
 }
