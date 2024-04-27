@@ -89,11 +89,6 @@ int main(int argc, char * argv[])
 
     // clear resources safely and make handler simple as possible
     while(!safeToDestroyMsgQueue);
-    while(!isMsgQueueEmpty())
-    {
-        // AVOID PULLING IN LOOPS
-        sleep(2);
-    }
     destroyMsgQueue();
 
     // 7. Clear clock resources
