@@ -14,8 +14,6 @@ void processQuantumHasFinished();
 void processTerminated(int signum);
 
 void runProcess();
-void trackRunningProcess();
-
 
 void HPF();
 void SRTN();
@@ -208,12 +206,20 @@ void SRTN()
 }
 void RR(int quantum)
 {
+    int timeToConsume = quantum; 
+    int prvTime = getClk() ;
     // isThereProcesses will be equal to 0 if no comming processes
     while (!empty(queue) || isThereProcessRunning || isThereProcesses)
     {
         if(empty(queue)) continue;
         if(!isThereProcessRunning)
-        {
+        {   
+            int t = getClk();
+            timeToConsume=quantum;
+            if(runningProcess->pData.remainingTime<quantum){
+                timeToConsume=runningProcess->pData.remainingTime;
+            }
+            
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
             runningProcess->pData.state=2 ; 
@@ -228,7 +234,19 @@ void RR(int quantum)
                 runProcess();
             }
             // After quantum finish this function send a SIGSTOP to running process
-            trackRunningProcess();
+      //      trackRunningProcess(t);
+        }else{
+            int time = getClk(); 
+            if(time == prvTime) continue; 
+            runningProcess->pData.remainingTime--;
+            timeToConsume--;
+            
+            if(timeToConsume<=0){
+                kill(runningProcess->pData.realID, SIGSTOP);  
+                processQuantumHasFinished();
+            }
+
+            prvTime=time ; 
         }
     }
     
@@ -250,49 +268,4 @@ void runProcess() {
     runningProcess->pData.state = 2; // Running 
     runningProcess->pData.getCPUBefore = 1;
 
-}
-void trackRunningProcess() {
-    int start_time = getClk();
-    int curr_time, time;
-    if(runningProcess->pData.remainingTime <= quantum) 
-    {
-        time = runningProcess->pData.remainingTime;   
-        while(1) {
-            curr_time = getClk();
-            while (start_time==curr_time)
-            {
-                curr_time = getClk(); 
-            }
-            start_time=curr_time;       
-            time--; 
-            if(time <= 0) 
-            { 
-                break;
-            }
-        }
-        // sleep(runningProcess->pData.remainingTime);
-        runningProcess->pData.remainingTime = 0;
-    }
-    else 
-    {
-        time = quantum;
-        while(1) {
-            curr_time = getClk();
-            while (start_time==curr_time)
-            {
-                curr_time = getClk(); 
-            }
-            start_time=curr_time;       
-            time--; 
-            if(time <= 0) 
-            { 
-                break;
-            }
-        }
-        // sleep(quantum);
-        kill(runningProcess->pData.realID, SIGSTOP);  
-        // Update process remaining time   
-        runningProcess->pData.remainingTime -= quantum;
-        processQuantumHasFinished();
-    }
 }
