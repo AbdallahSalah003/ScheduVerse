@@ -1,4 +1,3 @@
-#include <math.h>
 #include "headers.h"
 #include "./datastructures/Queue.h"
 #include "./datastructures/priQueue.h"
@@ -21,6 +20,17 @@ void HPF();
 void SRTN();
 void RR(int quantum);
 
+double sqrt(double x) {
+    double epsilon = 0.001; 
+    double guess = 1.0; 
+    double prev_guess;
+    do {
+        prev_guess = guess;
+        guess = (guess + x / guess) / 2;
+    } while (prev_guess - guess > epsilon || guess - prev_guess > epsilon);
+    return guess;
+}
+
 Queue *queue;
 priQueue * pqueue ;
 
@@ -39,12 +49,12 @@ double total_W = 0, total_WTA = 0, total_run = 0;
 
 int main(int argc, char * argv[])
 {   
-    printf("The Scheduler is executed!\n");
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
     signal(SIGRTMIN+2, processTerminated);
     initClk();
     
+     printf("The Scheduler is executed!\n");
     //TODO implement the scheduler :)
     schedAlgo = atoi(argv[1]);
     if(schedAlgo == 3) 
@@ -85,11 +95,9 @@ int main(int argc, char * argv[])
         queue = constructQueue();
         RR(quantum);
     }
-    printf("HELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n");
     double avgWTA = total_WTA/nProcesses;
     double sum = 0;
     for (int i = 0; i < storeWTA->size; i++) { 
-        printf("%lf \n", storeWTA->array[i]);
         sum += (storeWTA->array[i] - avgWTA) * (storeWTA->array[i] - avgWTA); 
     } 
     char prefPath[] = "/home/abdallahsalah/Desktop/ScheduVerse/scheduler.pref";
@@ -178,7 +186,8 @@ void recvProcess(int sig_num)
     }
     nProcesses += 1;
     totRunningTime += msg.process.runningtime;
-    addProcessToReady(&msg.process);    
+    addProcessToReady(&msg.process);
+    signal(SIGUSR2, recvProcess);    
 }
 void HPF()
 {

@@ -55,6 +55,7 @@ int main(int argc, char * argv[])
     {
         // #TODO HERE WE WILL SEND SOME ARGS TO THE SCHEDULER
         execvp("./scheduler.out", (char *[]){"./scheduler.out",algo_str,quantum_str, NULL});
+        printf("Error in exe the scheduler\n");
     }
     
     
@@ -80,6 +81,7 @@ int main(int argc, char * argv[])
         newMsg.process = prcss;
         // printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
         sendMsg(newMsg);
+        // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
         kill(sched_pid, SIGUSR2);
     }
