@@ -1,7 +1,9 @@
+#include <math.h>
 #include "headers.h"
 #include "./datastructures/Queue.h"
 #include "./datastructures/priQueue.h"
 #include "./communication/msg_queue.h"
+#include "./datastructures/dynamicArray.h"
 
 
 void noComingProcsses(int signum);
@@ -31,6 +33,9 @@ int isThereProcessRunning = 0;
 int MsyQueueID;
 int RR_isOn = 0;
 int quantum;
+FILE *file_ptr;
+double total_W = 0, total_WTA = 0, total_run = 0;
+ dynamic_array* storeWTA;
 
 int main(int argc, char * argv[])
 {   
@@ -50,6 +55,20 @@ int main(int argc, char * argv[])
     key_t msg_key = ftok("/home/abdallahsalah/Desktop/ScheduVerse/communication/keyfile", 'A');
     MsyQueueID = msgget(msg_key, 0666 | IPC_CREAT);
 
+
+    
+    char filename[] = "/home/abdallahsalah/Desktop/ScheduVerse/scheduler.log";
+    file_ptr = fopen(filename, "a");
+    if (file_ptr == NULL) {
+        printf("Error opening file!\n");
+        return 1;
+    }
+    fprintf(file_ptr, "#At time x process y stopped arr w total z remain y wait k\n");
+
+
+    arrayInit(&storeWTA); 
+
+
     if(schedAlgo == 1)
     {   
         pqueue=constructPriortyQueue(); 
@@ -66,8 +85,25 @@ int main(int argc, char * argv[])
         queue = constructQueue();
         RR(quantum);
     }
+    printf("HELLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL\n");
+    double avgWTA = total_WTA/nProcesses;
+    double sum = 0;
+    for (int i = 0; i < storeWTA->size; i++) { 
+        printf("%lf \n", storeWTA->array[i]);
+        sum += (storeWTA->array[i] - avgWTA) * (storeWTA->array[i] - avgWTA); 
+    } 
+    char prefPath[] = "/home/abdallahsalah/Desktop/ScheduVerse/scheduler.pref";
+    FILE *pref_ptr = fopen(prefPath, "a");
+    fprintf(pref_ptr, "CPU Utilization = %.2lf %% \n", (total_run/getClk())*100.0);
+    fprintf(pref_ptr, "Avg WTA = %.2lf \n", avgWTA);
+    fprintf(pref_ptr, "Avg Waiting = %.2lf \n", total_W/nProcesses);
+    fprintf(pref_ptr, "Std WTA = %.2lf \n", sqrt(sum/nProcesses));
+
     //upon termination release the clock resources.
     kill(getppid(), SIGINT);
+    fclose(file_ptr);
+    fclose(pref_ptr);
+    freeArray(storeWTA);
     destroyClk(false);
 }
 void noComingProcsses(int signum)
@@ -79,10 +115,11 @@ void processQuantumHasFinished()
 {
     printf("Process with id %d has finished a quantum with remaining time %d\n", runningProcess->pData.id, runningProcess->pData.remainingTime);
     printf("CURRENT TIME : %d\n", getClk());
+    fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
+    runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
+    
     runningProcess->pData.state=1 ; // READY
-
     push(queue, &(runningProcess->pData));
-
     isThereProcessRunning = 0;
 }
 void processTerminated(int signum)
@@ -92,10 +129,19 @@ void processTerminated(int signum)
     int waitingTime = finishTime - runningProcess->pData.runningtime - runningProcess->pData.arrivaltime;
     double turnaroundTime = finishTime - runningProcess->pData.arrivaltime;
     double weightedTurnaroundTime = turnaroundTime/runningProcess->pData.runningtime; // check if right
+    total_W += waitingTime;
+    total_WTA +=weightedTurnaroundTime;
+    
+    printf("------TERMINATED---> processs id %d and finish time %d \n ", runningProcess->pData.id, finishTime);
     // TODO : print to the output file
-    printf("------TERMINATED------>> process id: %d, arrivalTime: %d, runningTime: %d, startTiem: %d, finishTime: %d, waitingTime: %d\n", runningProcess->pData.id, runningProcess->pData.arrivaltime, 
-    runningProcess->pData.runningtime, runningProcess->pData.startTime, finishTime, waitingTime);
+    fprintf(file_ptr, "At time %d process %d finished arr %d total %d remain %d wait %d TA %.0lf WTA %.2lf\n", finishTime, runningProcess->pData.id, 
+    runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, 
+    waitingTime, turnaroundTime, weightedTurnaroundTime);
+    if(RR_isOn) printQueue(queue);
     isThereProcessRunning = 0;
+
+    insertItem(storeWTA, weightedTurnaroundTime);
+
     signal(SIGRTMIN+2, processTerminated);
 }
 void addProcessToReady(ProcessData *prcss)
@@ -179,6 +225,8 @@ void SRTN()
                 printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
                 kill(runningProcess->pData.realID, SIGCONT);
+                fprintf(file_ptr, "At time %d process %d resumed arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
+                runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
@@ -196,6 +244,8 @@ void SRTN()
             if(topprocess&&(runningProcess->pData.remainingTime > topprocess->pData.remainingTime ) ){
                 // stop it and return it to  the ready queue 
                 kill(runningProcess->pData.realID, SIGSTOP);
+                fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
+                runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
                 addProcessToReady(&runningProcess->pData);
                 isThereProcessRunning=0 ; 
             }
@@ -206,20 +256,12 @@ void SRTN()
 }
 void RR(int quantum)
 {
-    int timeToConsume = quantum; 
-    int prvTime = getClk() ;
     // isThereProcesses will be equal to 0 if no comming processes
     while (!empty(queue) || isThereProcessRunning || isThereProcesses)
     {
         if(empty(queue)) continue;
         if(!isThereProcessRunning)
-        {   
-            int t = getClk();
-            timeToConsume=quantum;
-            if(runningProcess->pData.remainingTime<quantum){
-                timeToConsume=runningProcess->pData.remainingTime;
-            }
-            
+        {
             struct Node *topProcess = pop(queue);
             runningProcess = topProcess;
             runningProcess->pData.state=2 ; 
@@ -228,25 +270,15 @@ void RR(int quantum)
                 printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
                 kill(runningProcess->pData.realID, SIGCONT);
+                fprintf(file_ptr, "At time %d process %d resumed arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
+                runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
             }
             else {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
                 runProcess();
             }
             // After quantum finish this function send a SIGSTOP to running process
-      //      trackRunningProcess(t);
-        }else{
-            int time = getClk(); 
-            if(time == prvTime) continue; 
-            runningProcess->pData.remainingTime--;
-            timeToConsume--;
-            
-            if(timeToConsume<=0){
-                kill(runningProcess->pData.realID, SIGSTOP);  
-                processQuantumHasFinished();
-            }
-
-            prvTime=time ; 
+            trackRunningProcess();
         }
     }
     
@@ -262,10 +294,56 @@ void runProcess() {
     {
         execvp("./process.out", (char *[]){"./process.out", runningtime_str,ind, NULL});
     }
-
+     fprintf(file_ptr, "At time %d process %d started arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
+    runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
     runningProcess->pData.realID = pid;
     runningProcess->pData.startTime = getClk();
     runningProcess->pData.state = 2; // Running 
     runningProcess->pData.getCPUBefore = 1;
-
+    total_run += runningProcess->pData.runningtime;
+}
+void trackRunningProcess() {
+    int start_time = getClk();
+    int curr_time, time;
+    if(runningProcess->pData.remainingTime <= quantum) 
+    {
+        time = runningProcess->pData.remainingTime;   
+        while(1) {
+            curr_time = getClk();
+            while (start_time==curr_time)
+            {
+                curr_time = getClk(); 
+            }
+            start_time=curr_time;       
+            time--; 
+            if(time <= 0) 
+            { 
+                break;
+            }
+        }
+        // sleep(runningProcess->pData.remainingTime);
+        runningProcess->pData.remainingTime = 0;
+    }
+    else 
+    {
+        time = quantum;
+        while(1) {
+            curr_time = getClk();
+            while (start_time==curr_time)
+            {
+                curr_time = getClk(); 
+            }
+            start_time=curr_time;       
+            time--; 
+            if(time <= 0) 
+            { 
+                break;
+            }
+        }
+        // sleep(quantum);
+        kill(runningProcess->pData.realID, SIGSTOP);  
+        // Update process remaining time   
+        runningProcess->pData.remainingTime -= quantum;
+        processQuantumHasFinished();
+    }
 }

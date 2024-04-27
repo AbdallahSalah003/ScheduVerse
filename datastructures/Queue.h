@@ -64,3 +64,14 @@ struct Node* peek(Queue *queue)
         return NULL;
     return  queue->front;
 }
+void printQueue(Queue *queue)
+{
+    struct Node *current = queue->front;
+    printf("Queue: ");
+    while (current != NULL)
+    {
+        printf("%d ", current->pData.id);
+        current = current->next;
+    }
+    printf("\n");
+}
