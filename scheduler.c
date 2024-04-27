@@ -80,7 +80,7 @@ void noComingProcsses(int signum)
 void processQuantumHasFinished()
 {
     printf("Process with id %d has finished a quantum with remaining time %d\n", runningProcess->pData.id, runningProcess->pData.remainingTime);
-    
+    printf("CURRENT TIME : %d\n", getClk());
     runningProcess->pData.state=1 ; // READY
 
     push(queue, &(runningProcess->pData));
@@ -197,7 +197,7 @@ void SRTN()
             printf("RT of running process and top is at clk : %d .. %d \n",runningProcess->pData.remainingTime,topprocess->pData.remainingTime);
             if(topprocess&&(runningProcess->pData.remainingTime > topprocess->pData.remainingTime ) ){
                 // stop it and return it to  the ready queue 
-                kill(runningProcess->pData.realID, SIGRTMIN+1);
+                kill(runningProcess->pData.realID, SIGSTOP);
                 addProcessToReady(&runningProcess->pData);
                 isThereProcessRunning=0 ; 
             }
@@ -252,14 +252,44 @@ void runProcess() {
 
 }
 void trackRunningProcess() {
+    int start_time = getClk();
+    int curr_time, time;
     if(runningProcess->pData.remainingTime <= quantum) 
     {
-        sleep(runningProcess->pData.remainingTime);
+        time = runningProcess->pData.remainingTime;   
+        while(1) {
+            curr_time = getClk();
+            while (start_time==curr_time)
+            {
+                curr_time = getClk(); 
+            }
+            start_time=curr_time;       
+            time--; 
+            if(time <= 0) 
+            { 
+                break;
+            }
+        }
+        // sleep(runningProcess->pData.remainingTime);
         runningProcess->pData.remainingTime = 0;
     }
     else 
     {
-        sleep(quantum);
+        time = quantum;
+        while(1) {
+            curr_time = getClk();
+            while (start_time==curr_time)
+            {
+                curr_time = getClk(); 
+            }
+            start_time=curr_time;       
+            time--; 
+            if(time <= 0) 
+            { 
+                break;
+            }
+        }
+        // sleep(quantum);
         kill(runningProcess->pData.realID, SIGSTOP);  
         // Update process remaining time   
         runningProcess->pData.remainingTime -= quantum;
