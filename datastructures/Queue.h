@@ -10,6 +10,8 @@ struct Node
     struct Node *next;
     
 };
+
+
 struct
 {
     struct Node *front;

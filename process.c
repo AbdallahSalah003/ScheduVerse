@@ -5,16 +5,15 @@
 
 
 int remainingtime;
-bool stop ; 
+
 int main(int agrc, char * argv[])
 {
     initClk();
-    stop = 0 ; 
+    
 
     remainingtime = atoi(argv[1]); 
     
     int ind = atoi(argv[2]);
-
     int prvtime = getClk();
     while (remainingtime)
     {       
@@ -25,8 +24,8 @@ int main(int agrc, char * argv[])
         }
         prvtime=time;
       //  printf("current clk is : %d",getClk());
-       
         remainingtime-- ; 
+        
         //  printf("Process %d has consumed sec and it's remaing time: %d\n",ind , remainingtime);
         if(remainingtime <= 0) 
         { 
@@ -39,6 +38,7 @@ int main(int agrc, char * argv[])
         // TODO: raise stop signal
         */
     }
+    printf("Process with ID %d Terminating and sending signal the scheduler telling termination \n", ind);
     // TODO: Send signal to scheduler stating termination
     kill(getppid(), SIGRTMIN+2);
 

@@ -11,7 +11,7 @@
 #include <unistd.h>
 #include <signal.h>
 
-typedef short bool;
+// typedef short bool;
 #define true 1
 #define false 0
 
@@ -57,7 +57,7 @@ void initClk()
  *                      It terminates the whole system and releases resources.
 */
 
-void destroyClk(bool terminateAll)
+void destroyClk(int terminateAll)
 {
     shmdt(shmaddr);
     if (terminateAll)

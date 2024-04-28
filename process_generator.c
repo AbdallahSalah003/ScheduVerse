@@ -100,7 +100,7 @@ int main(int argc, char * argv[])
     {
         printf("Scheduler exited with status %d\n", WEXITSTATUS(status));
     }
-    destroyClk(true);
+    destroyClk(1);
     return 0;
 }
 
