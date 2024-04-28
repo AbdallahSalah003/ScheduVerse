@@ -8,13 +8,16 @@ Queue *queue;
 void clearResources(int);
 void readInputFile(char *inputPath);
 bool validateArguments(int schedAlgo, int quantum);
-
+void incRecv(int sig_num);
 int safeToDestroyMsgQueue = 0;
 int runningTime, arrivalTime, priority, id;
+int recvProcesses = 0;
+int nProcesses = 0;
 
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
+    signal(SIGUSR1, incRecv);
     // TODO Initialization
     queue = constructQueue(); 
     // 1. Read the input files.
@@ -79,14 +82,24 @@ int main(int argc, char * argv[])
         MsgBuff newMsg;
         newMsg.mtype = 12;
         newMsg.process = prcss;
-        // printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
+        int tmp = recvProcesses;
         kill(sched_pid, SIGUSR2);
+        while (tmp==recvProcesses);
+        
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
+    printf("Sleeping %d ..... \n", getClk());
+    while (nProcesses != recvProcesses)
+    {
+        sleep(1);
+    }
     
+    printf("Wakeup %d ..... \n", getClk());
+
     kill(sched_pid, SIGUSR1);
 
     // clear resources safely and make handler simple as possible
@@ -111,7 +124,11 @@ void clearResources(int signum)
     safeToDestroyMsgQueue = 1;
     signal(SIGINT, clearResources);
 }
-
+void incRecv(int sig_num)
+{
+    recvProcesses++;
+    signal(SIGUSR1, incRecv);
+}
 void readInputFile( char *path) 
 {
     FILE* file = fopen(path, "r");
@@ -124,7 +141,7 @@ void readInputFile( char *path)
     while (fgets(input, 50, file))
     {
         if(input[0]=='#') continue;
-        
+        nProcesses++;
         sscanf(input, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority);
         ProcessData *tmp = constructProcess(id, arrivalTime, runningTime, priority);
         push(queue, tmp);

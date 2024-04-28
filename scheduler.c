@@ -166,9 +166,7 @@ void addProcessToReady(ProcessData *prcss)
     else 
     {
         prcss->state = 1;  // READY
-        down(semaphore_id);
         push(queue, prcss);
-        up(semaphore_id);
     }
 }
 void recvProcess(int sig_num)
@@ -178,14 +176,21 @@ void recvProcess(int sig_num)
     // TODO:  recv the processes and push it in the readyQueue
     MsgBuff msg;
     int check = msgrcv(MsyQueueID, &msg, sizeof(msg.process), 0, IPC_NOWAIT);
-    // printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
+    printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
     if(check == -1)
     {
         perror("Error receving messages");
     }
     nProcesses += 1;
-    totRunningTime += msg.process.runningtime;
+    totRunningTime += msg.process.runningtime;   
+    down(semaphore_id);
+    printf("Im Process with id %d having the lock now\n", msg.process.id);
     addProcessToReady(&msg.process);
+    up(semaphore_id);
+        // signal to inform generator that schedu recieved a message
+    kill(getppid(), SIGUSR1);
+    printf("Sched sent a signal to generator inform with reciving\n");
+
     signal(SIGUSR2, recvProcess);    
 }
 void HPF()
@@ -195,7 +200,9 @@ void HPF()
          if(priempty(pqueue)) continue;
          if(!isThereProcessRunning)
         {
+            down(semaphore_id);
             struct priNode * process = pripop(pqueue);
+            up(semaphore_id);
             runningProcess = process;
             runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
@@ -225,7 +232,9 @@ void SRTN()
         if(!isThereProcessRunning)
         {
             prvTime=getClk(); 
+            down(semaphore_id);
             struct priNode * process = pripop(pqueue);
+            up(semaphore_id);
             runningProcess = process;
             runningProcess->pData.state=2 ;
             isThereProcessRunning=1;
@@ -245,8 +254,9 @@ void SRTN()
             int time = getClk(); 
             if(time == prvTime) continue; 
             runningProcess->pData.remainingTime--;
-            
+            down(semaphore_id);
             struct priNode * topprocess = pripeek(pqueue);
+            up(semaphore_id);
             // check if the top of the queue has smaller RT 
             printf("RT of running process and top is at clk : %d .. %d \n",runningProcess->pData.remainingTime,topprocess->pData.remainingTime);
             if(topprocess&&(runningProcess->pData.remainingTime > topprocess->pData.remainingTime ) ){
@@ -254,7 +264,9 @@ void SRTN()
                 kill(runningProcess->pData.realID, SIGSTOP);
                 fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
                 runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
+                down(semaphore_id);
                 addProcessToReady(&runningProcess->pData);
+                up(semaphore_id);
                 isThereProcessRunning=0 ; 
             }
             prvTime=time ; 
@@ -277,7 +289,7 @@ void RR(int quantum)
             up(semaphore_id);
             runningProcess->pData.state = RUNNING; 
             isThereProcessRunning=1;
-            printf("GET CPU before for process %d\n",runningProcess->pData.getCPUBefore);
+            // printf("GET CPU before for process %d\n",runningProcess->pData.getCPUBefore);
             if((runningProcess->pData.getCPUBefore) == 1) {
                 printf("Sending SIGCONT to process %d\n",(runningProcess->pData.id));
                 // send SIGCONT 
@@ -309,9 +321,6 @@ void RR(int quantum)
                         break;
                     }
                 }
-                printf("Here flag equal %d\n", flag_termination);
-                while(!flag_termination);
-                flag_termination = 0;
                 
             }
             else 
@@ -342,8 +351,10 @@ void RR(int quantum)
                 isThereProcessRunning = 0;
                 // move current of the circuler queue
                 down(semaphore_id);
+                printf("Im Process with id %d having the lock now\n", runningProcess->pData.id);
                 push(queue, &(runningProcess->pData));
                 up(semaphore_id);
+                printf("I'm Process with id %d release the lock \n", runningProcess->pData.id);
             }
         }
     }
