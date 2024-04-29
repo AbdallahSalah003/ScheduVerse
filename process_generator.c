@@ -2,7 +2,7 @@
 #include "headers.h"
 #include "./datastructures/Queue.h"
 #include "./communication/msg_queue.h"
-
+#include "./communication/semaphores.h"
 Queue *queue;
 
 void clearResources(int);
@@ -87,6 +87,7 @@ int main(int argc, char * argv[])
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
         int tmp = recvProcesses;
+        while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
         while (tmp==recvProcesses);
         

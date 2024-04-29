@@ -18,6 +18,8 @@ int main(int agrc, char * argv[])
     while (remainingtime)
     {       
         int time = getClk(); 
+        if(prvtime!=time)
+            prvtime=time;
         while (prvtime==time)
         {
             time = getClk() ; 
@@ -25,7 +27,8 @@ int main(int agrc, char * argv[])
         prvtime=time;
       //  printf("current clk is : %d",getClk());
         remainingtime-- ; 
-        
+        if(remainingtime<=3)
+            printf("\nprocess 2 realistically has %d left now",remainingtime);
         //  printf("Process %d has consumed sec and it's remaing time: %d\n",ind , remainingtime);
         if(remainingtime <= 0) 
         { 

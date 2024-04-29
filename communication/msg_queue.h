@@ -18,7 +18,7 @@ struct
 
 void constructMsgQueue()
 {
-    key_t msg_key = ftok("/home/abdallahsalah/Desktop/ScheduVerse/communication/keyfile", 'A');
+    key_t msg_key = ftok("communication/keyfile", 'A');
     globalMsgQueueID = msgget(msg_key, 0666 | IPC_CREAT);
 
     if(globalMsgQueueID == -1) 
