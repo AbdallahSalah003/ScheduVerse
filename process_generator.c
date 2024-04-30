@@ -2,19 +2,22 @@
 #include "headers.h"
 #include "./datastructures/Queue.h"
 #include "./communication/msg_queue.h"
-
+#include "./communication/semaphores.h"
 Queue *queue;
 
 void clearResources(int);
 void readInputFile(char *inputPath);
 bool validateArguments(int schedAlgo, int quantum);
-
+void incRecv(int sig_num);
 int safeToDestroyMsgQueue = 0;
 int runningTime, arrivalTime, priority, id;
+int recvProcesses = 0;
+int nProcesses = 0;
 
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
+    signal(SIGUSR1, incRecv);
     // TODO Initialization
     queue = constructQueue(); 
     // 1. Read the input files.
@@ -79,22 +82,29 @@ int main(int argc, char * argv[])
         MsgBuff newMsg;
         newMsg.mtype = 12;
         newMsg.process = prcss;
-        // printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        int tmp = recvProcesses;
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
+        while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
+        while (tmp==recvProcesses);
+        
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
-    
+
     kill(sched_pid, SIGUSR1);
 
     // clear resources safely and make handler simple as possible
+    
     while(!safeToDestroyMsgQueue);
     destroyMsgQueue();
-
+    int shmid2 = shmget(ftok("remainingkey",'s'),4096,IPC_CREAT|0666);
+    shmctl(shmid2,IPC_RMID,NULL);
     // 7. Clear clock resources
     int status;
+    
     waitpid(sched_pid, &status, 0);
     if (WIFEXITED(status)) 
     {
@@ -111,7 +121,11 @@ void clearResources(int signum)
     safeToDestroyMsgQueue = 1;
     signal(SIGINT, clearResources);
 }
-
+void incRecv(int sig_num)
+{
+    recvProcesses++;
+    signal(SIGUSR1, incRecv);
+}
 void readInputFile( char *path) 
 {
     FILE* file = fopen(path, "r");
@@ -124,7 +138,7 @@ void readInputFile( char *path)
     while (fgets(input, 50, file))
     {
         if(input[0]=='#') continue;
-        
+        nProcesses++;
         sscanf(input, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority);
         ProcessData *tmp = constructProcess(id, arrivalTime, runningTime, priority);
         push(queue, tmp);

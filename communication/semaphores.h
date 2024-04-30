@@ -33,7 +33,7 @@ int constructSemaphore() {
 }
 int getSemaphore() {
     key_t sem = ftok("keyfile", 'P');
-    int id = semget(key_sem, 1, 0666 | IPC_CREAT);
+    int id = semget(sem, 1, 0666);
     return id;
 }
 void down(int sem) {
@@ -41,7 +41,7 @@ void down(int sem) {
 
     p_op.sem_num = 0;
     p_op.sem_op = -1;
-    p_op.sem_flg = !IPC_NOWAIT;
+    p_op.sem_flg = IPC_NOWAIT;
 
     if(semop(sem, &p_op, 1) == -1)
     {
@@ -53,7 +53,7 @@ void up(int sem) {
 
     v_op.sem_num = 0; // indicates sem index as we set semnum = 1
     v_op.sem_op = 1;
-    v_op.sem_flg = !IPC_NOWAIT;
+    v_op.sem_flg = IPC_NOWAIT;
 
     if(semop(sem, &v_op, 1) == -1)
     {
