@@ -83,32 +83,28 @@ int main(int argc, char * argv[])
         newMsg.mtype = 12;
         newMsg.process = prcss;
         printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        int tmp = recvProcesses;
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
-        int tmp = recvProcesses;
         while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
         while (tmp==recvProcesses);
         
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
-    printf("Sleeping %d ..... \n", getClk());
-    while (nProcesses != recvProcesses)
-    {
-        sleep(1);
-    }
-    
-    printf("Wakeup %d ..... \n", getClk());
 
     kill(sched_pid, SIGUSR1);
 
     // clear resources safely and make handler simple as possible
+    
     while(!safeToDestroyMsgQueue);
     destroyMsgQueue();
-
+    int shmid2 = shmget(ftok("remainingkey",'s'),4096,IPC_CREAT|0666);
+    shmctl(shmid2,IPC_RMID,NULL);
     // 7. Clear clock resources
     int status;
+    
     waitpid(sched_pid, &status, 0);
     if (WIFEXITED(status)) 
     {

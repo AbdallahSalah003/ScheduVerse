@@ -49,14 +49,15 @@ double total_W = 0, total_WTA = 0, total_run = 0;
 dynamic_array *storeWTA;
 int flag_termination = 0;
 int semaphore_id;
-
+int* remaddr;
 int main(int argc, char *argv[])
 {
     signal(SIGUSR1, noComingProcsses);
     signal(SIGUSR2, recvProcess);
     signal(SIGRTMIN + 2, processTerminated);
+    int shmid2 = shmget(ftok("remainingkey",'s'),4096,IPC_CREAT|0666);
+    remaddr = (int *)shmat(shmid2,(void*)0,0);
     initClk();
-
     printf("The Scheduler is executed!\n");
     // TODO implement the scheduler :)
     schedAlgo = atoi(argv[1]);
@@ -118,6 +119,7 @@ int main(int argc, char *argv[])
     freeArray(storeWTA);
     destroyClk(0);
     deleteSemaphore(semaphore_id);
+    shmdt(remaddr);
     kill(getppid(), SIGINT);
 }
 void noComingProcsses(int signum)
@@ -305,9 +307,11 @@ void RR(int quantum)
             if ((runningProcess->pData.getCPUBefore) == 1)
             {
                 printf("Sending SIGCONT to process %d\n", (runningProcess->pData.id));
+                *remaddr=runningProcess->pData.remainingTime;
                 // send SIGCONT
                 if(runningProcess->pData.id==2)
                     printf("\n-----------------------------\n\nprocess of id 2 has %d time left \n\n-------------------------------\n",runningProcess->pData.remainingTime);
+                kill(runningProcess->pData.realID, SIGUSR1);
                 kill(runningProcess->pData.realID, SIGCONT);
                 int waitTime = getClk() - (runningProcess->pData.runningtime - runningProcess->pData.remainingTime) - runningProcess->pData.arrivaltime;
                 fprintf(file_ptr, "At time %d process %d resumed arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
@@ -316,49 +320,23 @@ void RR(int quantum)
             else
             {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                *remaddr = runningProcess->pData.remainingTime;
                 runProcess();
             }
             // After quantum finish this function send a SIGSTOP to running process
-            int start_time = getClk();
-            int curr_time, time;
+            int time;
             if (runningProcess->pData.remainingTime <= quantum)
             {
                 time = runningProcess->pData.remainingTime;
-                while (1)
-                {
-                    curr_time = getClk();
-                    while (start_time == curr_time)
-                    {
-                        curr_time = getClk();
-                    }
-                    start_time = curr_time;
-                    time--;
-                    if (time <= 0)
-                    {
-                        break;
-                    }
-                }
+                while(*remaddr>0);
             }
             else
             {
-                time = quantum;
-                while (1)
-                {
-                    curr_time = getClk();
-                    while (start_time == curr_time)
-                    {
-                        curr_time = getClk();
-                    }
-                    start_time = curr_time;
-                    time--;
-                    if (time <= 0)
-                    {
-                        break;
-                    }
-                }
+                time = runningProcess->pData.remainingTime - quantum;
+                while (*remaddr>time);
                 kill(runningProcess->pData.realID, SIGSTOP);
                 // Update process remaining time
-                runningProcess->pData.remainingTime -= quantum;
+                runningProcess->pData.remainingTime=*remaddr;
                 int waitTime = getClk() - (runningProcess->pData.runningtime - runningProcess->pData.remainingTime) - runningProcess->pData.arrivaltime;
                 printf("Time : %d, Process with id %d has finished a quantum with remaining time %d\n", getClk(), runningProcess->pData.id, runningProcess->pData.remainingTime);
                 fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
@@ -380,13 +358,15 @@ void runProcess()
 {
     char runningtime_str[32];
     char ind[32];
+    char quanta[35];
     sprintf(runningtime_str, "%d", (runningProcess->pData.runningtime));
     sprintf(ind, "%d", (runningProcess->pData.id));
+    sprintf(quanta, "%d", quantum);
     int pid = fork();
 
     if (pid == 0)
     {
-        execvp("./process.out", (char *[]){"./process.out", runningtime_str, ind, NULL});
+        execvp("./process.out", (char *[]){"./process.out", runningtime_str, ind,quanta,NULL});
     }
     int waitTime = getClk() - runningProcess->pData.arrivaltime;
     fprintf(file_ptr, "At time %d process %d started arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
