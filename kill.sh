@@ -21,6 +21,4 @@ if [ -n "$pid" ]; then
     sleep 1
 
     kill "$sched"
-else
-    echo "No process found with name 'generator.out'"
 fi

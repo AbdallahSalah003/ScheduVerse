@@ -43,7 +43,7 @@ int nProcesses = 0, totRunningTime = 0;
 int isThereProcessRunning = 0;
 int MsyQueueID;
 int RR_isOn = 0;
-int quantum;
+int quantum = 0;
 FILE *file_ptr;
 double total_W = 0, total_WTA = 0, total_run = 0;
 dynamic_array *storeWTA;
@@ -163,8 +163,10 @@ void addProcessToReady(ProcessData *prcss)
     }
     else if (schedAlgo == 2)
     {
+        printf("pused to the pri\n");
         prcss->state = 1; // READY
         pushSRTN(pqueue, prcss);
+        printf("puseddd \n");
     }
     else
     {
@@ -189,6 +191,7 @@ void recvProcess(int sig_num)
     down(semaphore_id);
     printf("Im Process with id %d having the lock now\n", msg.process.id);
     addProcessToReady(&msg.process);
+    printf("will leave the lock\n");
     up(semaphore_id);
     // signal to inform generator that schedu recieved a message
     printf("Sched sent a signal to generator inform with reciving\n");
@@ -206,23 +209,15 @@ void HPF()
         if (!isThereProcessRunning)
         {
             down(semaphore_id);
-            struct priNode *process = pripop(pqueue);
+            runningProcess = pripop(pqueue);
             up(semaphore_id);
-            runningProcess = process;
             runningProcess->pData.state = 2;
-            isThereProcessRunning = 1;
-            if ((runningProcess->pData.getCPUBefore) == 1)
-            {
-                printf("Sending SIGCONT to process %d\n", (runningProcess->pData.id));
-                // send SIGCONT
-                kill(runningProcess->pData.realID, SIGCONT);
-            }
-            else
-            {
-                printf("Run first time the process id: %d\n", (runningProcess->pData.id));
-                runProcess();
-                // run a new process
-            }
+            isThereProcessRunning = 1;          
+            
+            // run the process
+            printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+            runProcess();
+                
 
             // TODO actually create and run the process
         }
@@ -230,6 +225,8 @@ void HPF()
 }
 void SRTN()
 {
+
+    runningProcess = malloc(sizeof(struct Node)); 
     int prvTime = getClk();
 
     // edit the algorithm to be preemitive
@@ -239,17 +236,19 @@ void SRTN()
             continue;
         if (!isThereProcessRunning)
         {
-            prvTime = getClk();
+        ////    prvTime = getClk();
             down(semaphore_id);
-            struct priNode *process = pripop(pqueue);
+            runningProcess = pripop(pqueue);
             up(semaphore_id);
-            runningProcess = process;
+    
             runningProcess->pData.state = 2;
             isThereProcessRunning = 1;
             if ((runningProcess->pData.getCPUBefore) == 1)
             {
                 printf("Sending SIGCONT to process %d\n", (runningProcess->pData.id));
+                 *remaddr=runningProcess->pData.remainingTime;
                 // send SIGCONT
+                kill(runningProcess->pData.realID, SIGUSR1);
                 kill(runningProcess->pData.realID, SIGCONT);
                 fprintf(file_ptr, "At time %d process %d resumed arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
                         runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
@@ -257,6 +256,7 @@ void SRTN()
             else
             {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                *remaddr = runningProcess->pData.remainingTime;
                 runProcess();
                 // run a new process
             }
