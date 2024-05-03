@@ -11,13 +11,13 @@ bool validateArguments(int schedAlgo, int quantum);
 void incRecv(int sig_num);
 int safeToDestroyMsgQueue = 0;
 int runningTime, arrivalTime, priority, id;
-int recvProcesses = 0;
+
 int nProcesses = 0;
 
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
-    signal(SIGUSR1, incRecv);
+   
     // TODO Initialization
     queue = constructQueue(); 
     // 1. Read the input files.
@@ -83,13 +83,13 @@ int main(int argc, char * argv[])
         newMsg.mtype = 12;
         newMsg.process = prcss;
         printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
-        int tmp = recvProcesses;
+        
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
         while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
-        while (tmp==recvProcesses);
+    
         
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
@@ -121,11 +121,7 @@ void clearResources(int signum)
     safeToDestroyMsgQueue = 1;
     signal(SIGINT, clearResources);
 }
-void incRecv(int sig_num)
-{
-    recvProcesses++;
-    signal(SIGUSR1, incRecv);
-}
+
 void readInputFile( char *path) 
 {
     FILE* file = fopen(path, "r");
