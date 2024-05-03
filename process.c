@@ -39,19 +39,15 @@ int main(int agrc, char *argv[])
         prvtime = getClk();
         time = getClk();
         printf("\nBEFORE CHANGING:: current clk is : %d, time: %d, prvtime: %d\n", getClk(), time, prvtime);
-        while (prvtime >= time)
+        while (prvtime == time)
         {
             time = getClk();
         }
-        if(time<=prvtime) continue;
         printf("\nAFTER CHANGING::  current clk is : %d, time: %d, prvtime: %d\n", getClk(), time, prvtime);
-        if(time<=prvtime) continue;
         prvtime = time;
-        if(time<prvtime) continue;
         remainingtime--;
         (*remainingTime) = remainingtime;
-        // i added a condition so if the algorithm is not RR it work probably (ali)
-        if(quantum&&remainingtime==target&&target!=0) {
+        if(remainingtime==target&&target!=0) {
             printf("waiting for the scheduler to suspend me!");
             sleep(1);
         }

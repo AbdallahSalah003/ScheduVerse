@@ -11,57 +11,57 @@ bool validateArguments(int schedAlgo, int quantum);
 void incRecv(int sig_num);
 int safeToDestroyMsgQueue = 0;
 int runningTime, arrivalTime, priority, id;
-
+int recvProcesses = 0;
 int nProcesses = 0;
 
 int main(int argc, char * argv[])
 {
     signal(SIGINT, clearResources);
-   
+    signal(SIGUSR1, incRecv);
     // TODO Initialization
-    queue = constructQueue(); 
+    queue = constructQueue();
     // 1. Read the input files.
     readInputFile("processes.txt");
     // 2. Ask the user for the chosen scheduling algorithm and its parameters, if there are any.
     int schedAlgo, quantum = -1;
     printf("Choode Scheduling Algorithm:\n1: HPF \n2: SRTN \n3: RR\n");
     scanf("%d", &schedAlgo);
-    if(schedAlgo == 3) 
+    if(schedAlgo == 3)
     {
         printf("Enter RR quantum: ");
         scanf("%d", &quantum);
     }
     validateArguments(schedAlgo, quantum);
-    
+
     constructMsgQueue();
-    
+
     // 3. Initiate and create the scheduler and clock processes.
     int clk_pid = fork();
-    if(clk_pid == -1) 
+    if(clk_pid == -1)
     {
         printf("Error in fork clk\n");
     }
-    if(clk_pid == 0) 
+    if(clk_pid == 0)
     {
         execvp("./clk.out", (char *[]){"./clk.out", NULL});
     }
     int sched_pid = fork();
-    if(sched_pid == -1) 
+    if(sched_pid == -1)
     {
         printf("Error in fork scheduler\n");
     }
     char algo_str[32];
-        char quantum_str[32];
-        sprintf(algo_str,  "%d", schedAlgo);
-        sprintf(quantum_str, "%d", quantum);
-    if(sched_pid == 0) 
+    char quantum_str[32];
+    sprintf(algo_str,  "%d", schedAlgo);
+    sprintf(quantum_str, "%d", quantum);
+    if(sched_pid == 0)
     {
         // #TODO HERE WE WILL SEND SOME ARGS TO THE SCHEDULER
         execvp("./scheduler.out", (char *[]){"./scheduler.out",algo_str,quantum_str, NULL});
         printf("Error in exe the scheduler\n");
     }
-    
-    
+
+
     // 4. Use this function after creating the clock process to initialize clock
     initClk();
 
@@ -83,30 +83,30 @@ int main(int argc, char * argv[])
         newMsg.mtype = 12;
         newMsg.process = prcss;
         printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
-        
+        int tmp = recvProcesses;
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
         // send a signal to scheduler telling that new process has been sent
         while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
-    
-        
+        while (tmp==recvProcesses);
+
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
 
     kill(sched_pid, SIGUSR1);
 
     // clear resources safely and make handler simple as possible
-    
+
     while(!safeToDestroyMsgQueue);
     destroyMsgQueue();
     int shmid2 = shmget(ftok("remainingkey",'s'),4096,IPC_CREAT|0666);
     shmctl(shmid2,IPC_RMID,NULL);
     // 7. Clear clock resources
     int status;
-    
+
     waitpid(sched_pid, &status, 0);
-    if (WIFEXITED(status)) 
+    if (WIFEXITED(status))
     {
         printf("Scheduler exited with status %d\n", WEXITSTATUS(status));
     }
@@ -121,11 +121,15 @@ void clearResources(int signum)
     safeToDestroyMsgQueue = 1;
     signal(SIGINT, clearResources);
 }
-
-void readInputFile( char *path) 
+void incRecv(int sig_num)
+{
+    recvProcesses++;
+    signal(SIGUSR1, incRecv);
+}
+void readInputFile( char *path)
 {
     FILE* file = fopen(path, "r");
-    if(file == NULL) 
+    if(file == NULL)
     {
         printf("Error reading the input!");
         exit(-1);
@@ -143,16 +147,16 @@ void readInputFile( char *path)
 }
 bool validateArguments(int schedAlgo, int quantum)
 {
-    if(schedAlgo > 3 || schedAlgo < 1) 
+    if(schedAlgo > 3 || schedAlgo < 1)
     {
         printf("Please provide a valid SchedAlgo");
         exit(-1);
     }
-    if(schedAlgo == 3 && quantum < 0) 
+    if(schedAlgo == 3 && quantum < 0)
     {
         printf("Please provide a valid quantum for RR");
         exit(-1);
     }
-    
+
     return 1;
 }
