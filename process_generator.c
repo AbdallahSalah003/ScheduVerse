@@ -89,7 +89,7 @@ int main(int argc, char * argv[])
         // send a signal to scheduler telling that new process has been sent
         while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
-        while (tmp==recvProcesses);
+//        while (tmp==recvProcesses);
 
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
