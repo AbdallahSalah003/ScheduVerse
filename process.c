@@ -43,11 +43,14 @@ int main(int agrc, char *argv[])
         {
             time = getClk();
         }
+        if(time<=prvtime) continue;
         printf("\nAFTER CHANGING::  current clk is : %d, time: %d, prvtime: %d\n", getClk(), time, prvtime);
+        if(time<=prvtime) continue;
         prvtime = time;
+        if(time<prvtime) continue;
         remainingtime--;
         (*remainingTime) = remainingtime;
-        if(remainingtime==target&&target!=0) {
+        if(remainingtime==target&&target!=0 && quantum) {
             printf("waiting for the scheduler to suspend me!");
             sleep(1);
         }

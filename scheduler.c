@@ -201,8 +201,7 @@ void HPF()
 {
     while (!priempty(pqueue) || isThereProcessRunning || isThereProcesses)
     {
-        if (priempty(pqueue))
-            continue;
+        if (priempty(pqueue)) continue;
         if (!isThereProcessRunning)
         {
             down(semaphore_id);
@@ -211,19 +210,15 @@ void HPF()
             runningProcess = process;
             runningProcess->pData.state = 2;
             isThereProcessRunning = 1;
-            if ((runningProcess->pData.getCPUBefore) == 1)
+
             {
-                printf("Sending SIGCONT to process %d\n", (runningProcess->pData.id));
-                // send SIGCONT
-                kill(runningProcess->pData.realID, SIGCONT);
-            }
-            else
-            {
+
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                quantum=runningProcess->pData.runningtime;
                 runProcess();
                 // run a new process
             }
-
+            printf("RETURNED\n");
             // TODO actually create and run the process
         }
     }
@@ -231,32 +226,39 @@ void HPF()
 void SRTN()
 {
     int prvTime = getClk();
+    runningProcess = malloc(sizeof(struct Node));
 
-    // edit the algorithm to be preemitive
     while (!priempty(pqueue) || isThereProcessRunning || isThereProcesses)
     {
         if (priempty(pqueue))
             continue;
         if (!isThereProcessRunning)
         {
-            prvTime = getClk();
+
             down(semaphore_id);
             struct priNode *process = pripop(pqueue);
             up(semaphore_id);
             runningProcess = process;
             runningProcess->pData.state = 2;
             isThereProcessRunning = 1;
+
             if ((runningProcess->pData.getCPUBefore) == 1)
             {
                 printf("Sending SIGCONT to process %d\n", (runningProcess->pData.id));
-                // send SIGCONT
+                *remaddr=runningProcess->pData.remainingTime;
+
+                prvTime = getClk();
+                kill(runningProcess->pData.realID, SIGUSR1);
                 kill(runningProcess->pData.realID, SIGCONT);
+                int waitTime = prvTime - (runningProcess->pData.runningtime - runningProcess->pData.remainingTime) - runningProcess->pData.arrivaltime;
                 fprintf(file_ptr, "At time %d process %d resumed arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
-                        runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
+                        runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, waitTime);
             }
             else
             {
                 printf("Run first time the process id: %d\n", (runningProcess->pData.id));
+                prvTime = getClk();
+                *remaddr = runningProcess->pData.remainingTime;
                 runProcess();
                 // run a new process
             }
@@ -276,8 +278,9 @@ void SRTN()
             {
                 // stop it and return it to  the ready queue
                 kill(runningProcess->pData.realID, SIGSTOP);
-                fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", getClk(), runningProcess->pData.id,
-                        runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, -1);
+                int waitTime = time - (runningProcess->pData.runningtime - runningProcess->pData.remainingTime) - runningProcess->pData.arrivaltime;
+                fprintf(file_ptr, "At time %d process %d stopped arr %d total %d remain %d wait %d\n", time, runningProcess->pData.id,
+                        runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime, waitTime);
                 down(semaphore_id);
                 addProcessToReady(&runningProcess->pData);
                 up(semaphore_id);
