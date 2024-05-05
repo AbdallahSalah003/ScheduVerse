@@ -10,11 +10,12 @@ typedef struct
     int remainingTime;
     int startTime;
     int getCPUBefore;
+    int memory;
     int realID;
     State state;
 } ProcessData;
 
-ProcessData *constructProcess(int id, int arrive, int run, int prio)
+ProcessData *constructProcess(int id, int arrive, int run, int prio, int memory)
 {
     ProcessData *tmp = (struct ProcessData*)malloc(sizeof(ProcessData));
     tmp->id = id;
@@ -23,5 +24,6 @@ ProcessData *constructProcess(int id, int arrive, int run, int prio)
     tmp->priority = prio;
     tmp->remainingTime = run;
     tmp->getCPUBefore = 0;
+    tmp->memory = memory;
     return tmp;
 }

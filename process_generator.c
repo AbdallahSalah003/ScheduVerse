@@ -10,7 +10,7 @@ void readInputFile(char *inputPath);
 bool validateArguments(int schedAlgo, int quantum);
 void incRecv(int sig_num);
 int safeToDestroyMsgQueue = 0;
-int runningTime, arrivalTime, priority, id;
+int runningTime, arrivalTime, priority, id,memory;
 int recvProcesses = 0;
 int nProcesses = 0;
 
@@ -82,7 +82,7 @@ int main(int argc, char * argv[])
         MsgBuff newMsg;
         newMsg.mtype = 12;
         newMsg.process = prcss;
-        printf("GEN Sending: PROCESS ID: %d\n", prcss.id);
+        printf("GEN Sending: PROCESS ID: %d of memory %d\n", prcss.id,prcss.memory);
         int tmp = recvProcesses;
         sendMsg(newMsg);
         // printf("Process is sent successfully id : %d\n", prcss.id);
@@ -90,10 +90,11 @@ int main(int argc, char * argv[])
         while(getSemaphore()==-1);
         kill(sched_pid, SIGUSR2);
 //        while (tmp==recvProcesses);
-
+        printf("\n");
+        printQueue(queue);
     }
     // TODO : We need to send a signal to scheduler (when no processes left)
-
+    printf("no processes left now!");
     kill(sched_pid, SIGUSR1);
 
     // clear resources safely and make handler simple as possible
@@ -135,14 +136,17 @@ void readInputFile( char *path)
         exit(-1);
     }
     char input[50];
+    printf("\n\n\n________________________");
     while (fgets(input, 50, file))
     {
         if(input[0]=='#') continue;
         nProcesses++;
-        sscanf(input, "%d %d %d %d", &id, &arrivalTime, &runningTime, &priority);
-        ProcessData *tmp = constructProcess(id, arrivalTime, runningTime, priority);
+        sscanf(input, "%d %d %d %d %d", &id, &arrivalTime, &runningTime, &priority,&memory);
+        ProcessData *tmp = constructProcess(id, arrivalTime, runningTime, priority,memory);
+        printf("\n\n Process %d registered of memory %d\n",id,memory);
         push(queue, tmp);
     }
+    printf("________________________\n\n\n");
     fclose(file);
 }
 bool validateArguments(int schedAlgo, int quantum)
