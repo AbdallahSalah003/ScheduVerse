@@ -201,9 +201,6 @@ void recvProcess(int sig_num)
     addProcessToReady(&msg.process);
     up(semaphore_id);
     // signal to inform generator that schedu recieved a message
-    printf("Sched sent a signal to generator inform with reciving\n");
-    kill(getppid(), SIGUSR1);
-    printf("Sched sent a signal to generator inform with reciving\n");
 
     signal(SIGUSR2, recvProcess);
 }

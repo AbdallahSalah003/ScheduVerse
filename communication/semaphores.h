@@ -22,7 +22,7 @@ int constructSemaphore() {
     if(sem_id == -1)
     {
         perror("Error in create sem");
-        return;
+        return -1 ;
     }
     semun.val = 1;
     if(semctl(sem_id, 0, SETVAL, semun) == -1)
