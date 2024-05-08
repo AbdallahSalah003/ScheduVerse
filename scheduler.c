@@ -178,29 +178,37 @@ void addProcessToReady(ProcessData *prcss)
 }
 void recvProcess(int sig_num)
 {
-    // this is SIGUSR2 handler is executed when new process
-    // has been sent through MsgQueue
-    // TODO:  recv the processes and push it in the readyQueue
-    MsgBuff msg;
-    int check = msgrcv(MsyQueueID, &msg, sizeof(msg.process), 0, IPC_NOWAIT);
-    printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
-    if (check == -1)
-    {
-        perror("Error receving messages");
+
+
+
+     {
+
+        // this is SIGUSR2 handler is executed when new process
+        // has been sent through MsgQueue
+        // TODO:  recv the processes and push it in the readyQueue
+        MsgBuff msg;
+        msg.process.startTime=-1;
+        int check = msgrcv(MsyQueueID, &msg, sizeof(msg.process), 0, IPC_NOWAIT);
+
+        if (check == -1 || msg.process.startTime == -1 ) {
+            return;
+        }
+         printf("SCHED Recieve PROCESS ID: %d\n", msg.process.id);
+        nProcesses += 1;
+        totRunningTime += msg.process.runningtime;
+        down(semaphore_id);
+        // if it has a place in memory
+        printf("Im Process with id %d having the lock now\n", msg.process.id);
+        printf("\n\nALLOCATING MEMORY FOR PROCESS OF MEMORY : %d\n\n", msg.process.memory);
+        allocatePartition(memorySegment, msg.process.memory, msg.process.id);
+        // else
+        // processArrayCheckInit(&memoryOverflow);
+        // addProcessToWaitingOnMemory(memoryOverflow,&msg.process);
+        addProcessToReady(&msg.process);
+        up(semaphore_id);
+
+         recvProcess(sig_num);
     }
-    nProcesses += 1;
-    totRunningTime += msg.process.runningtime;
-    down(semaphore_id);
-    // if it has a place in memory
-    printf("Im Process with id %d having the lock now\n", msg.process.id);
-    printf("\n\nALLOCATING MEMORY FOR PROCESS OF MEMORY : %d\n\n",msg.process.memory);
-    allocatePartition(memorySegment, msg.process.memory,msg.process.id);
-    // else
-    // processArrayCheckInit(&memoryOverflow);
-    // addProcessToWaitingOnMemory(memoryOverflow,&msg.process);
-    addProcessToReady(&msg.process);
-    up(semaphore_id);
-    // signal to inform generator that schedu recieved a message
 
     signal(SIGUSR2, recvProcess);
 }
