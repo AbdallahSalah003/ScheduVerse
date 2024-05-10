@@ -152,12 +152,12 @@ void processTerminated(int signum)
     // TODO: Call func to deallocate
     deallocatePartition(memorySegment, runningProcess->pData.allocatedMem, runningProcess->pData.id);
     if(!priempty(mem_pqueue)) {
-        priNode top = pripeek(mem_pqueue);
-        if(top.pData.memory<=runningProcess->pData.memory) {
-            addProcessToReady(top.pData);
+        struct priNode* top = pripeek(mem_pqueue);
+        if(top->pData.memory<=runningProcess->pData.memory) {
+            addProcessToReady(top);
         }
     }
-    fprintf(file_mem, "At time %d freed %d bytes for process %d from %d to %d", getClk(), runningProcess->pData.memory, runningProcess->pData.id, runningProcess->pData.begin, runningProcess->pData.end);
+    fprintf(file_mem, "\nAt time %d freed %d bytes for process %d from %d to %d\n", getClk(), runningProcess->pData.memory, runningProcess->pData.id, runningProcess->pData.begin, runningProcess->pData.end);
     total_W += waitingTime;
     total_WTA += weightedTurnaroundTime;
 
@@ -212,7 +212,7 @@ void recvProcess(int sig_num)
             msg.process.begin = par->start;
             msg.process.end = par->end;
             msg.process.allocatedMem = par->size;
-            fprintf(file_mem, "At time %d allocated %d bytes for process %d from %d to %d",
+            fprintf(file_mem, "\nAt time %d allocated %d bytes for process %d from %d to %d",
                     getClk(), msg.process.id, msg.process.memory, msg.process.begin,
                     msg.process.end);
             // else
@@ -220,7 +220,7 @@ void recvProcess(int sig_num)
             // addProcessToWaitingOnMemory(memoryOverflow,&msg.process);
             addProcessToReady(&msg.process);
         } else {
-            pushMem(mem_pqueue, msg.process);
+            pushMem(mem_pqueue, &msg.process);
         }
         up(semaphore_id);
         recvProcess(sig_num);

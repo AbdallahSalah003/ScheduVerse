@@ -25,6 +25,7 @@ BuddyPartition* newPartition(int ssize,int sstart, int eend){
     partition->start=sstart;
     partition->end=eend;
     partition->free=1;
+    partition->pid=-1;
     partition->size=ssize;
     partition->left=NULL;
     partition->right=NULL;
@@ -91,15 +92,39 @@ if(root->size!=1){
 }
     return NULL;
 }
-void rec_deallocatePartition(BuddyPartition* root, int size, int prcss_id) {
-    if(root==NULL) return NULL;
-    if(size>root->size||root->free==0)
-        return NULL;
-    if(root )
+int rec_deallocatePartition(BuddyPartition* root, int size, int prcss_id) {
+    if(root==NULL) return 0;
+    if(size>root->size)
+        return 0;
+    if(root->pid==prcss_id)
+    {
+        root->free=1;
+        root->pid=-1;
+        return 1;
+    }
+    else if(root->left !=NULL)
+    {
+        if(rec_deallocatePartition(root->left,size/2,prcss_id)||rec_deallocatePartition(root->right,size/2,prcss_id)){
+            if(root->left->free==1 && root->right->free==1&& root->left->left==NULL &&root->right->left==NULL)
+            {
+                free(root->left);
+                free(root->right);
+                root->free=1;
+            }
+            return 1;
+        }
+        else
+            return 0;
+    }
+    else
+        return 0;
 
 }
 void deallocatePartition(BuddySegment* segment, int processSize, int pid) {
-    rec_allocatePartition(segment->root, processSize, pid);
+    
+    int found = rec_deallocatePartition(segment->root, processSize, pid);
+    if(found==0)
+        printf("___\n___\n___\n___\nYALAHWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY\n___\n___\n___\n___");
 }
 BuddyPartition* allocatePartition(BuddySegment* segment,int processSize,int pid) {
     processSize = pow(2,ceil(log(processSize)/log(2)));
