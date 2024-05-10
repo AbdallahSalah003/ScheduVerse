@@ -33,6 +33,7 @@ double sqrt(double x)
 }
 
 priQueue *pqueue;
+priQueue *mem_pqueue;
 Queue *queue;
 BuddySegment *memorySegment;
 struct Node *runningProcess;
@@ -51,6 +52,7 @@ dynamic_array *storeWTA;
 int flag_termination = 0;
 int semaphore_id;
 int *remaddr;
+
 int main(int argc, char *argv[])
 {
     signal(SIGUSR1, noComingProcsses);
@@ -66,6 +68,7 @@ int main(int argc, char *argv[])
     {
         quantum = atoi(argv[2]);
     }
+    mem_pqueue = constructPriortyQueue();
     memorySegment = initializeMemory();
     key_t msg_key = ftok("communication/keyfile", 'A');
     MsyQueueID = msgget(msg_key, 0666 | IPC_CREAT);
@@ -80,6 +83,7 @@ int main(int argc, char *argv[])
         printf("Error opening file!\n");
         return 1;
     }
+    fprintf(file_mem, "#At time x allocated y bytes for process z from i to j");
     fprintf(file_ptr, "#At time x process y stopped arr w total z remain y wait k\n");
 
     arrayInit(&storeWTA);
@@ -145,7 +149,15 @@ void processTerminated(int signum)
     fprintf(file_ptr, "At time %d process %d finished arr %d total %d remain %d wait %d TA %.0lf WTA %.2lf\n", finishTime, runningProcess->pData.id,
             runningProcess->pData.arrivaltime, runningProcess->pData.runningtime, runningProcess->pData.remainingTime,
             waitingTime, turnaroundTime, weightedTurnaroundTime);
-
+    // TODO: Call func to deallocate
+    deallocatePartition(memorySegment, runningProcess->pData.allocatedMem, runningProcess->pData.id);
+    if(!priempty(mem_pqueue)) {
+        priNode top = pripeek(mem_pqueue);
+        if(top.pData.memory<=runningProcess->pData.memory) {
+            addProcessToReady(top.pData);
+        }
+    }
+    fprintf(file_mem, "At time %d freed %d bytes for process %d from %d to %d", getClk(), runningProcess->pData.memory, runningProcess->pData.id, runningProcess->pData.begin, runningProcess->pData.end);
     total_W += waitingTime;
     total_WTA += weightedTurnaroundTime;
 
@@ -178,11 +190,6 @@ void addProcessToReady(ProcessData *prcss)
 }
 void recvProcess(int sig_num)
 {
-
-
-
-     {
-
         // this is SIGUSR2 handler is executed when new process
         // has been sent through MsgQueue
         // TODO:  recv the processes and push it in the readyQueue
@@ -200,16 +207,23 @@ void recvProcess(int sig_num)
         // if it has a place in memory
         printf("Im Process with id %d having the lock now\n", msg.process.id);
         printf("\n\nALLOCATING MEMORY FOR PROCESS OF MEMORY : %d\n\n", msg.process.memory);
-        allocatePartition(memorySegment, msg.process.memory, msg.process.id);
-        // else
-        // processArrayCheckInit(&memoryOverflow);
-        // addProcessToWaitingOnMemory(memoryOverflow,&msg.process);
-        addProcessToReady(&msg.process);
+        BuddyPartition * par = allocatePartition(memorySegment, msg.process.memory, msg.process.id);
+        if(par!=NULL) {
+            msg.process.begin = par->start;
+            msg.process.end = par->end;
+            msg.process.allocatedMem = par->size;
+            fprintf(file_mem, "At time %d allocated %d bytes for process %d from %d to %d",
+                    getClk(), msg.process.id, msg.process.memory, msg.process.begin,
+                    msg.process.end);
+            // else
+            // processArrayCheckInit(&memoryOverflow);
+            // addProcessToWaitingOnMemory(memoryOverflow,&msg.process);
+            addProcessToReady(&msg.process);
+        } else {
+            pushMem(mem_pqueue, msg.process);
+        }
         up(semaphore_id);
-
-         recvProcess(sig_num);
-    }
-
+        recvProcess(sig_num);
     signal(SIGUSR2, recvProcess);
 }
 void HPF()

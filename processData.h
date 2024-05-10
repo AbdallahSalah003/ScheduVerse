@@ -12,6 +12,10 @@ typedef struct
     int getCPUBefore;
     int memory;
     int realID;
+    int actualmem;
+    int begin;
+    int end;
+    int allocatedMem;
     State state;
 } ProcessData;
 

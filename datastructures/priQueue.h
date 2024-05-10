@@ -106,7 +106,44 @@ bool pushHPF(priQueue* pqueue, ProcessData *pData){
 
     return 1 ;       
 }
+bool pushMem(priQueue* pqueue, ProcessData *pData){
 
+    struct priNode* newNode = (struct priNode*)malloc(sizeof(struct priNode));
+    newNode->pData = *pData;
+    newNode->next = NULL;
+    // check if the queu is empty
+    if(!pqueue->front){
+        pqueue->front=newNode;
+        pqueue->back=newNode;
+    }else{
+        // place the priNode in it is right place
+        // we will use an approch which is
+        // when found a priNode with a priorty greater than the pri of the new priNode
+        // we will place the priNode before it
+        {
+            struct priNode * ptr = pqueue->front;
+            struct priNode * addAfterMe = NULL ;
+            while (ptr&&ptr->pData.memory<=newNode->pData.memory)
+            {
+                addAfterMe=ptr;
+                ptr=ptr->next;
+            }
+            if(!addAfterMe){
+                // place the new priNode in the front ;
+                newNode->next=pqueue->front;
+                pqueue->front=newNode;
+            }else{
+                //place the newnode
+                newNode->next=ptr;
+                addAfterMe->next=newNode;
+            }
+
+        }
+
+    }
+
+    return 1 ;
+}
 struct priNode* pripop(priQueue* pqueue) 
 {
     if(pqueue->front == NULL)

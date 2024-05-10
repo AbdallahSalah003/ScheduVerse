@@ -69,11 +69,11 @@ if(root->size!=1){
         root->right = newPartition(root->size/2,root->start + root->size/2,root->end);
         return rec_allocatePartition(root->left,size);
     }
-    else{
+    else {
         if(root->left->free)
         {
             BuddyPartition* lfound= rec_allocatePartition(root->left,size);
-            if(lfound==NULL){
+            if(lfound==NULL) {
                 lfound = rec_allocatePartition(root->right,size);
                 if(lfound){
                     if(root->left->free + root->right->free==0)
@@ -82,24 +82,33 @@ if(root->size!=1){
             }
                 return lfound;
         }
-        else{
+        else {
             BuddyPartition* found =  rec_allocatePartition(root->right,size);
             root->free = root->right->free;
             return found;
         }
     }
 }
-return NULL;
+    return NULL;
 }
+void rec_deallocatePartition(BuddyPartition* root, int size, int prcss_id) {
+    if(root==NULL) return NULL;
+    if(size>root->size||root->free==0)
+        return NULL;
+    if(root )
 
-int allocatePartition(BuddySegment* segment,int processSize,int pid){
+}
+void deallocatePartition(BuddySegment* segment, int processSize, int pid) {
+    rec_allocatePartition(segment->root, processSize, pid);
+}
+BuddyPartition* allocatePartition(BuddySegment* segment,int processSize,int pid) {
     processSize = pow(2,ceil(log(processSize)/log(2)));
     BuddyPartition* newpart=rec_allocatePartition(segment->root,processSize);
     if(newpart)
     {
         newpart->pid;
         printf("\n special kalam allocated memory of %d starting from %d to %d\n",newpart->size,newpart->start,newpart->end);
-        return 1;
+        return newpart;
     }
-    return 0;
+    return NULL;
 }
