@@ -157,7 +157,7 @@ void processTerminated(int signum)
             addProcessToReady(top);
         }
     }
-    fprintf(file_mem, "\nAt time %d freed %d bytes for process %d from %d to %d\n", getClk(), runningProcess->pData.memory, runningProcess->pData.id, runningProcess->pData.begin, runningProcess->pData.end);
+    fprintf(file_mem, "\nAt time %d freed %d bytes for process %d from %d to %d", getClk(), runningProcess->pData.memory, runningProcess->pData.id, runningProcess->pData.begin, runningProcess->pData.end);
     total_W += waitingTime;
     total_WTA += weightedTurnaroundTime;
 

@@ -104,12 +104,14 @@ int rec_deallocatePartition(BuddyPartition* root, int size, int prcss_id) {
     }
     else if(root->left !=NULL)
     {
-        if(rec_deallocatePartition(root->left,size/2,prcss_id)||rec_deallocatePartition(root->right,size/2,prcss_id)){
+        if(rec_deallocatePartition(root->left,size,prcss_id)==1||rec_deallocatePartition(root->right,size,prcss_id)==1){
             if(root->left->free==1 && root->right->free==1&& root->left->left==NULL &&root->right->left==NULL)
             {
                 free(root->left);
                 free(root->right);
                 root->free=1;
+                root->left = NULL;
+                root->right = NULL;
             }
             return 1;
         }
@@ -131,7 +133,7 @@ BuddyPartition* allocatePartition(BuddySegment* segment,int processSize,int pid)
     BuddyPartition* newpart=rec_allocatePartition(segment->root,processSize);
     if(newpart)
     {
-        newpart->pid;
+        newpart->pid=pid;
         printf("\n special kalam allocated memory of %d starting from %d to %d\n",newpart->size,newpart->start,newpart->end);
         return newpart;
     }
