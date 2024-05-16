@@ -1,8 +1,8 @@
 #include <signal.h>
-#include "headers.h"
-#include "./datastructures/Queue.h"
-#include "./communication/msg_queue.h"
-#include "./communication/semaphores.h"
+#include "../headers.h"
+#include "../datastructures/Queue.h"
+#include "../communication/msg_queue.h"
+#include "../communication/semaphores.h"
 Queue *queue;
 
 void clearResources(int);

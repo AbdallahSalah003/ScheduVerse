@@ -1,10 +1,10 @@
-#include "./headers.h"
-#include "./datastructures/priQueue.h"
-#include "./communication/msg_queue.h"
-#include "./datastructures/dynamicArray.h"
-#include "./communication/semaphores.h"
-#include "./datastructures/Queue.h"
-#include "./BuddySegment.h"
+#include "../headers.h"
+#include "../datastructures/priQueue.h"
+#include "../communication/msg_queue.h"
+#include "../datastructures/dynamicArray.h"
+#include "../communication/semaphores.h"
+#include "../datastructures/Queue.h"
+#include "../datastructures/BuddySegment.h"
 void noComingProcsses(int signum);
 int isThereProcesses = 1;
 

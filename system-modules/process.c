@@ -1,4 +1,4 @@
-#include "headers.h"
+#include "../headers.h"
 
 int shmRid;
 key_t remaining_key;
